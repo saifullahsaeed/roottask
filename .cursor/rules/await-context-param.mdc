@@ -1,0 +1,13 @@
+---
+description: 
+globs: src/app/api/**/*.ts
+alwaysApply: false
+---
+Always use params as Prromise 
+
+Example:
+```
+context: { params: Promise<{ projectId: string }> }
+const { projectId } = await context.params;
+
+```

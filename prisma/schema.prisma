@@ -1,0 +1,355 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * Enums
+ */
+
+enum TaskPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum Permission {
+  CREATE_PROJECT
+  DELETE_PROJECT
+  EDIT_PROJECT
+  VIEW_PROJECT
+  MANAGE_TEAM
+  INVITE_MEMBERS
+  REMOVE_MEMBERS
+  ASSIGN_TASKS
+  CREATE_TASKS
+  EDIT_TASKS
+  DELETE_TASKS
+  VIEW_TASKS
+}
+
+enum ActivityType {
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_DELETED
+  STATUS_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  COMMENT_ADDED
+  CHECKLIST_ADDED
+  CHECKLIST_COMPLETED
+  TAG_ADDED
+  TAG_REMOVED
+  DEPENDENCY_ADDED
+  DEPENDENCY_REMOVED
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+/**
+ * Model Definitions
+ */
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  refresh_token_expires_in Int?
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id              String       @id @default(cuid())
+  name            String?
+  email           String?      @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String?
+  accounts        Account[]
+  sessions        Session[]
+  teamMemberships TeamMember[]
+  createdTasks    Task[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TeamMember[]
+  projects    Project[]
+}
+
+model TeamMember {
+  id             String           @id @default(cuid())
+  teamId         String
+  userId         String
+  role           TeamRole         @default(MEMBER)
+  joinedAt       DateTime         @default(now())
+  team           Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  TaskAssignment TaskAssignment[]
+  TaskActivity   TaskActivity[]
+  TaskAttachment TaskAttachment[]
+
+  @@unique([teamId, userId])
+}
+
+model RolePermission {
+  id         String     @id @default(cuid())
+  role       TeamRole
+  permission Permission
+  createdAt  DateTime   @default(now())
+
+  @@unique([role, permission])
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  teamId      String
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  statuses    TaskStatus[]
+}
+
+model Task {
+  id          String        @id @default(cuid())
+  title       String        @db.VarChar(255)
+  description String?       @db.Text
+  priority    TaskPriority?
+
+  // Status
+  statusId    String?
+  status      TaskStatus?      @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  position    Int              @default(0)
+  // Child Relations
+  checklist   TaskChecklist[]
+  comments    TaskComment[]
+  assignments TaskAssignment[]
+  tags        TaskTag[]
+  activities  TaskActivity[]
+  attachments TaskAttachment[]
+
+  // Dependencies
+  blockingTasks  TaskDependency[] @relation("BlockingTask")
+  blockedByTasks TaskDependency[] @relation("BlockedTask")
+
+  // Recurrence
+  isRecurring  Boolean            @default(false)
+  recurrenceId String?
+  recurrence   RecurrencePattern? @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
+  parentTaskId String?
+  parentTask   Task?              @relation("RecurringTaskInstances", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  childTasks   Task[]             @relation("RecurringTaskInstances")
+
+  // Owner
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  // Timestamps
+  startDate   DateTime?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model TaskStatus {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  position    Int      @default(0) // For sorting statuses
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tasks       Task[]
+}
+
+model TaskChecklist {
+  id          String  @id @default(cuid())
+  name        String  @db.VarChar(255)
+  description String? @db.Text
+  taskId      String
+  task        Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model TaskComment {
+  id      String @id @default(cuid())
+  content String @db.Text
+  taskId  String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model TaskDependency {
+  id             String   @id @default(cuid())
+  blockingTaskId String
+  blockedTaskId  String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  blockingTask Task @relation("BlockingTask", fields: [blockingTaskId], references: [id], onDelete: Cascade)
+  blockedTask  Task @relation("BlockedTask", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([blockingTaskId, blockedTaskId])
+  @@index([blockingTaskId])
+  @@index([blockedTaskId])
+}
+
+model TaskAssignment {
+  id           String   @id @default(cuid())
+  taskId       String
+  teamMemberId String
+  assignedAt   DateTime @default(now())
+
+  // Relations
+  task       Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  teamMember TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, teamMemberId])
+  @@index([taskId])
+  @@index([teamMemberId])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  color       String? // Optional color for the tag (e.g., "#FF0000")
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tasks       TaskTag[]
+}
+
+model TaskTag {
+  id        String   @id @default(cuid())
+  taskId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, tagId])
+  @@index([taskId])
+  @@index([tagId])
+}
+
+model TaskActivity {
+  id          String       @id @default(cuid())
+  taskId      String
+  type        ActivityType
+  description String       @db.Text
+  metadata    Json? // Store additional data about the activity
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  task         Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
+  teamMemberId String?
+
+  @@index([taskId])
+  @@index([teamMemberId])
+}
+
+model RecurrencePattern {
+  id             String              @id @default(cuid())
+  frequency      RecurrenceFrequency
+  interval       Int                 @default(1) // Every X days/weeks/months/years
+  weekDays       WeekDay[] // For weekly recurrence
+  dayOfMonth     Int? // For monthly recurrence (1-31)
+  monthOfYear    Int? // For yearly recurrence (1-12)
+  endDate        DateTime? // Optional end date for the recurrence
+  maxOccurrences Int? // Optional maximum number of occurrences
+  tasks          Task[] // All tasks using this pattern
+
+  // Time settings
+  startTime DateTime? // Optional specific time of day
+  duration  Int? // Duration in minutes
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  fileName     String
+  fileType     String
+  fileSize     Int // Size in bytes
+  fileUrl      String // URL to the file in storage (e.g., S3, Cloudinary)
+  thumbnailUrl String? // Optional thumbnail URL for images/videos
+  mimeType     String
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  task         Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
+  teamMemberId String?
+
+  @@index([taskId])
+  @@index([teamMemberId])
+}
