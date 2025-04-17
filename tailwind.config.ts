@@ -56,6 +56,33 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        priority: {
+          low: {
+            DEFAULT: "hsl(215, 20%, 65%)",
+            light: "hsl(215, 20%, 95%)",
+            dark: "hsl(215, 20%, 25%)",
+          },
+          medium: {
+            DEFAULT: "hsl(45, 93%, 47%)",
+            light: "hsl(45, 93%, 95%)",
+            dark: "hsl(45, 93%, 25%)",
+          },
+          high: {
+            DEFAULT: "hsl(0, 84%, 60%)",
+            light: "hsl(0, 84%, 95%)",
+            dark: "hsl(0, 84%, 25%)",
+          },
+          critical: {
+            DEFAULT: "hsl(0, 72%, 51%)",
+            light: "hsl(0, 72%, 95%)",
+            dark: "hsl(0, 72%, 25%)",
+          },
+          blocker: {
+            DEFAULT: "hsl(271, 91%, 65%)",
+            light: "hsl(271, 91%, 95%)",
+            dark: "hsl(271, 91%, 25%)",
+          },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -104,7 +104,7 @@ export function CreateProjectDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? <LoaderAnimated size={16} className="mr-2" /> : null}
+              {isPending ? <LoaderAnimated size={4} className="mr-2" /> : null}
               Create Project
             </Button>
           </DialogFooter>

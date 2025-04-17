@@ -22,12 +22,21 @@ import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { Project } from "@/types";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
-
+import { useProjectStore } from "@/stores/useProjectStore";
 export function Navbar() {
   const { selectedTeam, selectedProject, setSelectedProject, projects } =
     useAppStore();
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [open, setOpen] = useState(false);
+  const { reset, setProject } = useProjectStore();
+
+  const handleProjectSelect = (project: Project) => {
+    // Update app store
+    setSelectedProject(project);
+    // Reset project store and set new project
+    reset();
+    setProject(project);
+  };
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -42,8 +51,8 @@ export function Navbar() {
   }, []);
 
   const handleProjectCreated = (newProject: Project) => {
-    // Set the new project as selected
-    setSelectedProject(newProject);
+    // Set the new project as selected in both stores
+    handleProjectSelect(newProject);
   };
 
   if (!selectedTeam) {
@@ -76,7 +85,7 @@ export function Navbar() {
                   <DropdownMenuItem
                     key={project.id}
                     className="flex items-center gap-2"
-                    onClick={() => setSelectedProject(project)}
+                    onClick={() => handleProjectSelect(project)}
                   >
                     <Folder className="h-4 w-4" />
                     {project.name}
@@ -87,7 +96,10 @@ export function Navbar() {
                 ))}
                 <DropdownMenuItem
                   className="text-primary font-medium"
-                  onClick={() => setShowCreateProject(true)}
+                  onClick={() => {
+                    setShowCreateProject(true);
+                    reset();
+                  }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create New Project
@@ -139,7 +151,7 @@ export function Navbar() {
               <CommandItem
                 key={project.id}
                 onSelect={() => {
-                  setSelectedProject(project);
+                  handleProjectSelect(project);
                   setOpen(false);
                 }}
               >

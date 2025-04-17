@@ -1,155 +1,81 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { TaskFlow } from "@/components/flow/TaskFlow";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAppStore } from "@/stores/useAppStore";
-import { LoaderAnimated } from "@/components/ui";
-import { Team, Project } from "@/types";
-import { NoTeams } from "@/components/dashboard/NoTeams";
-import { SelectTeam } from "@/components/dashboard/SelectTeam";
-import { CreateProject } from "@/components/dashboard/CreateProject";
-import { SelectProject } from "@/components/dashboard/SelectProject";
-import { TabNavigation } from "@/components/dashboard/TabNavigation";
-import { Board } from "@/components/board/Board";
-import { ComingSoon } from "@/components/ui/ComingSoon";
-import { useProjectStore } from "@/stores/useProjectStore";
-import { useStatuses } from "@/hooks/useStatuses";
-import { useTasks } from "@/hooks/useTasks";
-// Loading Component
-function Loading({ message }: { message: string }) {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <LoaderAnimated size={40} color="text-primary" message={message} />
-    </div>
-  );
-}
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/";
+import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
+import type { Project } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
-  // Access global state and actions from Zustand stores
-  const {
-    selectedTeam,
-    selectedProject,
-    teams,
-    projects,
-    setSelectedTeam,
-    setSelectedProject,
-  } = useAppStore();
-
-  const { isLoading: isProjectLoading, setProject } = useProjectStore();
-  useStatuses(selectedProject?.id);
-  useTasks(selectedProject!.id);
-  // Local state for managing UI elements
-  const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [activeTab, setActiveTab] = useState("board");
+  const router = useRouter();
 
-  // Access the React Query client
-  const queryClient = useQueryClient();
-
-  // Handlers
-  function handleTeamCreated(newTeam: Team) {
-    queryClient.invalidateQueries({ queryKey: ["teams"] });
-    setSelectedTeam(newTeam);
-    setShowCreateTeam(false);
-  }
-
-  function handleProjectCreated(newProject: Project) {
-    setSelectedProject(newProject);
-    setProject(newProject);
-  }
-
-  // Effects
-  useEffect(
-    function () {
-      if (projects && projects.length > 0 && !selectedProject) {
-        setSelectedProject(projects[0]);
-      }
+  // Fetch projects with their taskflows
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) throw new Error("Failed to fetch projects");
+      return response.json();
     },
-    [projects, selectedProject, setSelectedProject]
-  );
+  });
 
-  if (!teams?.length) {
+  if (isLoading) {
     return (
-      <NoTeams
-        showCreateTeam={showCreateTeam}
-        setShowCreateTeam={setShowCreateTeam}
-        onTeamCreated={handleTeamCreated}
-      />
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
     );
   }
 
-  if (!selectedTeam) {
-    return (
-      <SelectTeam
-        teams={teams}
-        showCreateTeam={showCreateTeam}
-        setShowCreateTeam={setShowCreateTeam}
-        onTeamCreated={handleTeamCreated}
-        onTeamSelect={setSelectedTeam}
-      />
-    );
-  }
+  const handleProjectClick = (projectId: string) => {
+    router.push(`/dashboard/projects/${projectId}`);
+  };
 
-  if (isProjectLoading) {
-    return <Loading message="Loading..." />;
-  }
-
-  if (!projects?.length) {
-    return (
-      <CreateProject
-        team={selectedTeam}
-        showCreateProject={showCreateProject}
-        setShowCreateProject={setShowCreateProject}
-        onProjectCreated={handleProjectCreated}
-      />
-    );
-  }
-
-  if (!selectedProject) {
-    return (
-      <SelectProject
-        projects={projects}
-        showCreateProject={showCreateProject}
-        setShowCreateProject={setShowCreateProject}
-        onProjectCreated={handleProjectCreated}
-        onProjectSelect={setSelectedProject}
-      />
-    );
-  }
-
-  if (isProjectLoading) {
-    return <Loading message="Loading..." />;
-  }
-
-  // Render the main content
   return (
-    <div className="h-full relative">
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      {activeTab === "flow" && (
-        <TaskFlow team_id={selectedTeam.id} project_id={selectedProject.id} />
-      )}
-      {activeTab === "board" && selectedProject && (
-        <Board selectedProject={selectedProject} />
-      )}
-      {activeTab === "calendar" && selectedProject && (
-        <ComingSoon
-          feature="Calendar View"
-          description="A beautiful calendar view to manage your tasks and deadlines is coming soon!"
-        />
-      )}
-      {activeTab === "list" && selectedProject && (
-        <ComingSoon
-          feature="List View"
-          description="A powerful list view with advanced filtering and sorting capabilities is coming soon!"
-        />
-      )}
-      {activeTab === "timeline" && selectedProject && (
-        <ComingSoon
-          feature="Timelines View"
-          description="A timelines view to manage your tasks and deadlines is coming soon!"
-        />
-      )}
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Projects</h1>
+        <Button onClick={() => setShowCreateProject(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Project
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects?.map((project: Project) => (
+          <Card
+            key={project.id}
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleProjectClick(project.id)}
+          >
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>{project.name}</CardTitle>
+                <ArrowRight className="h-5 w-5 text-gray-500" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">
+                  Status: {project.status.toLowerCase()}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Created: {new Date(project.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <CreateProjectDialog
+        open={showCreateProject}
+        onOpenChange={setShowCreateProject}
+      />
     </div>
   );
 }

@@ -11,8 +11,12 @@ export const NODE_TYPES = {
   CARD: "card",
 } as const;
 
+export const EDGE_TYPES = {
+  CUSTOM: "custom",
+} as const;
+
 // Background grid
 export const BACKGROUND = {
-  gap: 12,
+  gap: 20,
   size: 1,
 } as const;

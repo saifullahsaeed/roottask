@@ -1,89 +1,146 @@
-import { Handle, Position } from "reactflow";
-import { CARD } from "../constants";
-import { CalendarClock, Flag } from "lucide-react";
+import { Position, NodeProps } from "reactflow";
+import { ChevronLeft, Trash2 } from "lucide-react";
+import { TaskType } from "../types/flow.types";
+import { useFlowStore } from "../store/useFlowStore";
+import { cn } from "@/lib/utils";
+import { StatusBadge } from "./card/StatusBadge";
+import { PriorityBadge } from "./card/PriorityBadge";
+import { DueDate } from "./card/DueDate";
+import { Assignees } from "./card/Assignees";
+import { CustomHandle } from "./CustomHandle";
+import { TaskStatus } from "@prisma/client";
+import { Button } from "@/components/ui/button/Button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
-interface CardNodeProps {
-  data: {
-    title: string;
-    priority?: "urgent";
-    dueDate?: string;
-    assignee?: string;
+export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
+  const updateNode = useFlowStore((state) => state.updateNode);
+  const { toggleTaskDetails, deleteNode } = useFlowStore();
+
+  const handleStatusChange = (newStatus: TaskStatus) => {
+    updateNode(id, { ...data, status: newStatus });
   };
-}
 
-export function CardNode({ data }: CardNodeProps) {
+  const handleShowDetails = () => {
+    toggleTaskDetails(id);
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteNode(id);
+      toast.success("Task deleted successfully");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Failed to delete task. Please try again.");
+    }
+  };
+
   return (
-    <>
-      <Handle
-        type="target"
+    <div
+      className={cn(
+        "group w-[300px] rounded-xl border-2 transition-all duration-200",
+        selected
+          ? "border-primary/80 shadow-xl ring-2 ring-primary/20 bg-primary/5"
+          : "border-border/40 shadow-md hover:shadow-lg",
+        data.status === "TODO" &&
+          "border-dashed border-gray-500/50 bg-gray-500/10",
+        data.status === "IN_PROGRESS" && "border-indigo-500 bg-indigo-500",
+        data.status === "COMPLETED" && "border-green-500 bg-green-500",
+        "hover:shadow-xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      )}
+    >
+      <CustomHandle
+        handleType="target"
         position={Position.Left}
-        className="!bg-slate-400"
+        isConnectable
+        nodeId={id}
       />
-      <div
-        style={{ width: CARD.width, height: CARD.height }}
-        className={`${CARD.padding} 
-          bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${CARD.borderRadius}
-          shadow-sm hover:shadow-lg transition-all duration-200
-          group`}
-      >
-        {/* card header */}
-        <div className="flex items-center justify-between mb-2 ">
+
+      <div className="p-3 space-y-2">
+        {/* Status and Priority Row */}
+        <div className="flex items-center justify-between gap-2">
+          {data.status && (
+            <StatusBadge
+              status={data.status}
+              onStatusChange={handleStatusChange}
+            />
+          )}
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-              TO DO
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-              Urgent
-            </p>
+            {data.priority && <PriorityBadge priority={data.priority} />}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this task? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
-        <div className="flex flex-col h-full">
-          {/* Title row */}
-          <div className="flex items-start gap-2 min-h-0 max-h-10">
-            <p
-              className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-2 flex-1 min-w-0
-                group-hover:text-slate-800 dark:group-hover:text-slate-50 transition-colors duration-200"
-            >
-              {data.title}
-            </p>
-          </div>
 
-          {/* Metadata row */}
-          <div className="flex items-center justify-between mt-auto pt-1">
-            <div
-              className="flex items-center gap-1.5 text-2xs text-slate-500 dark:text-slate-400
-                group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors duration-200"
-            >
-              <CalendarClock className="w-3.5 h-3.5" />
-              <span>{data.dueDate || "Tomorrow"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {data.priority === "urgent" && (
-                <Flag
-                  className="text-red-500 !text-[11px] w-2.5 h-2.5
-                    group-hover:scale-110 transition-transform duration-200"
-                />
-              )}
-              {data.assignee ? (
-                <div
-                  className="w-[20px] h-[20px] rounded-full bg-slate-100 dark:bg-slate-700
-                    flex items-center justify-center text-2xs text-slate-700 dark:text-slate-200
-                    group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors duration-200"
-                >
-                  {data.assignee.charAt(0).toUpperCase()}
-                </div>
-              ) : null}
-            </div>
+        {/* Title */}
+        <div className="space-y-0.5">
+          <h3 className="font-medium text-foreground/90 line-clamp-2 text-sm leading-relaxed">
+            {data.title}
+          </h3>
+        </div>
+
+        {/* Due Date, Assignees and Details Button */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/40">
+          <button
+            className="p-1 rounded-md hover:bg-muted/50 transition-colors"
+            onClick={handleShowDetails}
+          >
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-2">
+            {data.dueDate && <DueDate dueDate={data.dueDate?.toString()} />}
+            {data.assignees && Array.isArray(data.assignees) ? (
+              <Assignees assignees={data.assignees} />
+            ) : (
+              data.assignees && <Assignees assignees={[data.assignees]} />
+            )}
           </div>
         </div>
       </div>
-      <Handle
-        type="source"
+
+      <CustomHandle
+        handleType="source"
         position={Position.Right}
-        className="!bg-slate-400"
+        isConnectable
+        nodeId={id}
       />
-    </>
+    </div>
   );
 }

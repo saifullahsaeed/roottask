@@ -28,11 +28,20 @@ async function fetchTasks(projectId: string, filters?: { statusId?: string }) {
   return await response.json();
 }
 
-export function useTasks(projectId: string, filters?: { statusId?: string }) {
+export function useTasks(
+  projectId: string | null,
+  filters?: { statusId?: string }
+) {
   const { setTasks } = useProjectStore();
+
   return useQuery<Task[], Error>({
     queryKey: ["tasks", projectId, filters],
     queryFn: async () => {
+      if (!projectId) {
+        setTasks([]);
+
+        return [];
+      }
       const tasks = await fetchTasks(projectId, filters);
       // Sort tasks by position before setting in store
       const sortedTasks = tasks.sort(

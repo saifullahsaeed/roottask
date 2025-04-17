@@ -145,7 +145,7 @@ export const useProjectStore = create<ProjectStore>()(
      * UseCase: When the project is unloaded from the UI and also when the project is changed or a new one is selected it should be reset
      * @returns void
      */
-    reset: () => set({ project: null, statuses: null }),
+    reset: () => set({ project: null, statuses: null, tasks: null }),
 
     /**
      * Set the loading state of the current active project
