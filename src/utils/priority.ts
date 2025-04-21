@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 export function getPriorityColor(priority: TaskPriority | null): string {
   switch (priority) {
     case TaskPriority.LOW:
-      return "text-gray-500 font-bold";
+      return "text-priority-low font-medium";
     case TaskPriority.MEDIUM:
-      return "text-yellow-500 font-bold";
+      return "text-priority-medium font-medium";
     case TaskPriority.HIGH:
-      return "text-red-500 font-bold";
+      return "text-priority-high font-semibold";
     case TaskPriority.CRITICAL:
-      return "text-red-500 font-normal";
+      return "text-priority-critical font-semibold";
     case TaskPriority.BLOCKER:
-      return "text-red-800 font-normal";
+      return "text-priority-blocker font-bold";
     default:
       return "text-muted-foreground";
   }
@@ -56,15 +56,15 @@ export function getPriorityBgColor(priority: TaskPriority | null): string {
 export function getPriorityBorderColor(priority: TaskPriority | null): string {
   switch (priority) {
     case TaskPriority.LOW:
-      return "border-priority-low";
+      return "border-slate-200 dark:border-slate-700";
     case TaskPriority.MEDIUM:
-      return "border-priority-medium";
+      return "border-amber-200 dark:border-amber-700";
     case TaskPriority.HIGH:
-      return "border-priority-high";
+      return "border-orange-200 dark:border-orange-700";
     case TaskPriority.CRITICAL:
-      return "border-priority-critical";
+      return "border-rose-200 dark:border-rose-700";
     case TaskPriority.BLOCKER:
-      return "border-priority-blocker";
+      return "border-red-200 dark:border-red-700";
     default:
       return "border-border";
   }
@@ -75,7 +75,6 @@ export function getPriorityStyles(priority: TaskPriority | null): string {
     "transition-colors",
     getPriorityColor(priority),
     getPriorityBgColor(priority),
-    getPriorityBorderColor(priority),
-    "border"
+    "rounded-md px-2 py-1"
   );
 }

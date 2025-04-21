@@ -1,5 +1,12 @@
-import { Position, NodeProps } from "reactflow";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { Position, NodeProps, NodeToolbar } from "reactflow";
+import {
+  ChevronLeft,
+  Trash2,
+  Copy,
+  Link,
+  Pin,
+  MoreVertical,
+} from "lucide-react";
 import { TaskType } from "../types/flow.types";
 import { useFlowStore } from "../store/useFlowStore";
 import { cn } from "@/lib/utils";
@@ -22,10 +29,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { deleteNodeInBackground } from "../bi/tasks";
 
 export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
   const updateNode = useFlowStore((state) => state.updateNode);
-  const { toggleTaskDetails, deleteNode } = useFlowStore();
+  const { toggleTaskDetails, deleteNode, taskFlowId } = useFlowStore();
 
   const handleStatusChange = (newStatus: TaskStatus) => {
     updateNode(id, { ...data, status: newStatus });
@@ -35,10 +43,13 @@ export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
     toggleTaskDetails(id);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     try {
-      await deleteNode(id);
-      toast.success("Task deleted successfully");
+      deleteNode(id);
+      deleteNodeInBackground({
+        taskFlowId: taskFlowId,
+        nodeId: id,
+      });
     } catch (error) {
       console.error("Error deleting task:", error);
       toast.error("Failed to delete task. Please try again.");
@@ -66,6 +77,74 @@ export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
         nodeId={id}
       />
 
+      <NodeToolbar
+        position={Position.Top}
+        className="bg-background/90 backdrop-blur-sm flex items-center gap-1 p-1 rounded-lg"
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
+          title="Copy task"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
+          title="Link task"
+        >
+          <Link className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
+          title="Pin task"
+        >
+          <Pin className="h-3.5 w-3.5" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+              title="Delete task"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this task? This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {}}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 hover:bg-primary/10 hover:text-primary"
+          title="More actions"
+        >
+          <MoreVertical className="h-3.5 w-3.5" />
+        </Button>
+      </NodeToolbar>
+
       <div className="p-3 space-y-2">
         {/* Status and Priority Row */}
         <div className="flex items-center justify-between gap-2">
@@ -75,38 +154,7 @@ export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
               onStatusChange={handleStatusChange}
             />
           )}
-          <div className="flex items-center gap-2">
-            {data.priority && <PriorityBadge priority={data.priority} />}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this task? This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          {data.priority && <PriorityBadge priority={data.priority} />}
         </div>
 
         {/* Title */}

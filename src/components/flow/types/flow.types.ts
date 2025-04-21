@@ -1,4 +1,11 @@
-import { Node, Edge, NodeChange, EdgeChange, NodeProps } from "reactflow";
+import {
+  Node,
+  Edge,
+  NodeChange,
+  EdgeChange,
+  NodeProps,
+  Connection,
+} from "reactflow";
 import { Task, User } from "@prisma/client";
 
 // Node Data Types
@@ -45,7 +52,7 @@ export interface NodeActions {
 export interface EdgeActions {
   setEdges: (edges: Edge[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  onConnect: (params: Edge) => void;
+  onConnect: (params: Connection | Edge) => void;
   deleteEdges: (ids: string[]) => void;
 }
 

@@ -38,6 +38,7 @@ import {
   createNodeInBackground,
   createNodeWithEdgesInBackground,
 } from "../bi/tasks";
+import { getNextCardPosition } from "./nextCardposition";
 
 interface PrioritySelectProps {
   value: TaskPriority | null;
@@ -411,28 +412,40 @@ export function CreateTaskModal({
     }
     // If there's a source node and connection type is selected, create the connection
     if (sourceNodeId && connectionType && newNode.id) {
+      const nextCardPosition = getNextCardPosition(sourceNodeId);
       // Create a connection object that matches ReactFlow's Edge type
       const newEdge: Edge = {
         id: `edge-${uuidv4()}`,
         source: sourceNodeId,
-        target: newNode.id,
-        sourceHandle: "source",
-        targetHandle: "target",
+        target: newNodeId,
+        sourceHandle: null,
+        targetHandle: null,
         type: connectionType,
+        style: {
+          stroke: "#000",
+          strokeWidth: 2,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        },
       };
-
       // Add the edge to the store
       setEdges([...edges, newEdge]);
-
       createNodeWithEdgesInBackground({
         taskFlowId: taskFlowId,
         node: {
-          id: newNode.id,
+          id: newNodeId,
           type: "card",
-          position: { x: 0, y: 0 },
+          position: nextCardPosition,
           data: newNode,
         },
-        edges: [newEdge],
+        edges: [
+          {
+            source: sourceNodeId,
+            target: newNodeId,
+            type: connectionType,
+            id: newEdge.id,
+          },
+        ],
       });
     }
     onClose();

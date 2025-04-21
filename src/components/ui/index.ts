@@ -13,3 +13,6 @@ export * from "./badge/badge";
 export * from "./skeleton/skeleton";
 export * from "./calendar";
 export * from "./alert-dialog";
+export * from "./scroll-area";
+export * from "./avatar";
+export * from "./separator";

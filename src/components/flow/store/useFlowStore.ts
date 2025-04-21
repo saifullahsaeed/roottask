@@ -5,6 +5,7 @@ import {
   EdgeChange,
   applyNodeChanges,
   applyEdgeChanges,
+  Connection,
 } from "reactflow";
 import {
   FlowState,
@@ -15,13 +16,7 @@ import {
   FlowNode,
   TaskType,
 } from "@/components/flow/types/flow.types";
-import {
-  deleteNodeInBackground,
-  updateNodeInBackground,
-  updateTaskInBackground,
-} from "@/components/flow/bi/tasks";
 import { devtools } from "zustand/middleware";
-import { deleteEdgeInBackground } from "@/components/flow/bi/edges";
 import { RecalculateNodePositions } from "../controls/PositionCalculator";
 
 type Store = FlowState &
@@ -52,31 +47,13 @@ export const useFlowStore = create<Store>()(
       set({
         nodes: applyNodeChanges(changes, get().nodes),
       });
-      changes.forEach((change) => {
-        if (change.type === "position" && change.dragging) {
-          updateNodeInBackground({
-            taskFlowId: get().taskFlowId,
-            nodeId: change.id,
-            updates: {
-              positionX: change.position?.x,
-              positionY: change.position?.y,
-            },
-          });
-        }
-      });
     },
     updateNode: (id: string, data: TaskType) => {
-      const taskId = data.id;
       set((state) => ({
         nodes: state.nodes.map((node) =>
           node.id === id ? { ...node, data: { ...node.data, ...data } } : node
         ),
       }));
-      updateTaskInBackground({
-        taskFlowId: get().taskFlowId,
-        taskId: taskId,
-        updates: data,
-      });
     },
     addNode: (
       id: string,
@@ -96,11 +73,6 @@ export const useFlowStore = create<Store>()(
       }));
     },
     deleteNode: (id: string) => {
-      // Get all edges connected to this node
-      const connectedEdges = get().edges.filter(
-        (edge) => edge.source === id || edge.target === id
-      );
-
       // Remove the node and its connected edges from the state
       set((state) => ({
         nodes: state.nodes.filter((node) => node.id !== id),
@@ -108,15 +80,6 @@ export const useFlowStore = create<Store>()(
           (edge) => edge.source !== id && edge.target !== id
         ),
       }));
-
-      // Delete the node and its edges in the background
-      deleteNodeInBackground({ taskFlowId: get().taskFlowId, nodeId: id });
-      if (connectedEdges.length > 0) {
-        deleteEdgeInBackground({
-          taskFlowId: get().taskFlowId,
-          edgeIds: connectedEdges.map((edge) => edge.id),
-        });
-      }
     },
 
     // Edge Actions
@@ -126,9 +89,7 @@ export const useFlowStore = create<Store>()(
         edges: applyEdgeChanges(changes, get().edges),
       });
     },
-    onConnect: (params: Edge) => {
-      // Check if edge already exists by source and target
-      console.log("Adding edge:", params);
+    onConnect: (params: Connection | Edge) => {
       const edgeExists = get().edges.some(
         (edge: Edge) =>
           edge.source === params.source && edge.target === params.target
@@ -144,14 +105,9 @@ export const useFlowStore = create<Store>()(
     },
 
     deleteEdges: (ids: string[]) => {
-      console.log("Deleting edges:", ids);
       set((state) => ({
         edges: state.edges.filter((edge) => !ids.includes(edge.id)),
       }));
-      deleteEdgeInBackground({
-        taskFlowId: get().taskFlowId,
-        edgeIds: ids,
-      });
     },
 
     // Flow Control Actions

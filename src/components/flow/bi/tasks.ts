@@ -193,7 +193,7 @@ export async function createNodeWithEdgesInBackground(
         throw new Error("Task flow ID is required");
       }
 
-      // Create the node
+      // Create the node first
       const nodeResponse = await fetch(
         `/api/taskflows/${data.taskFlowId}/nodes`,
         {
@@ -214,6 +214,9 @@ export async function createNodeWithEdgesInBackground(
       if (!nodeResponse.ok) {
         throw new Error(`Failed to create node: ${await nodeResponse.text()}`);
       }
+
+      // Wait for node to be created before creating edges
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // If there are edges to create, create them in bulk
       if (data.edges && data.edges.length > 0) {

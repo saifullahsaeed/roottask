@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       {
         hostname: "avatars.githubusercontent.com",
       },
+      {
+        hostname: "plus.unsplash.com",
+      },
     ],
   },
   allowedDevOrigins: [

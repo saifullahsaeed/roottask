@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Task } from "@prisma/client";
-
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 /**
  * @description - This API endpoint retrieves all nodes for a taskflow.
  */
@@ -47,9 +48,13 @@ export async function POST(
   { params }: { params: Promise<{ taskFlowId: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const { type, positionX, positionY, data, id } = body;
     const { taskFlowId } = await params;
+    if (!session?.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     // //validate the body
     // if (!type || !positionX || !positionY || !data || !id) {
     //   return NextResponse.json({ error: "Invalid body" }, { status: 403 });
@@ -57,6 +62,7 @@ export async function POST(
     //if data cointain assigneesIds,
     const assigneesIds = data.assigneesIds;
     delete data.assigneesIds;
+    assigneesIds.push(session.user.id);
     //create new task
     const newTask = await prisma.task.create({
       data: data,

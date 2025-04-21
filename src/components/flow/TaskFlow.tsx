@@ -44,7 +44,7 @@ export function TaskFlow({ taskFlowId }: { taskFlowId: string }) {
   ]);
 
   return (
-    <div className="w-full h-[calc(100vh-4rem)] flex">
+    <div className="w-full h-[calc(100vh-3rem)] flex">
       {isLoading || edgesLoading ? (
         <div className="flex items-center justify-center w-full h-full">
           <div>Loading...</div>
@@ -56,6 +56,7 @@ export function TaskFlow({ taskFlowId }: { taskFlowId: string }) {
             <div className="w-1/3 h-full border-r border-border/40">
               <TaskDetails
                 node={selectedNode}
+                taskflowId={taskFlowId}
                 onClose={() => toggleTaskDetails(null)}
               />
             </div>
@@ -68,7 +69,10 @@ export function TaskFlow({ taskFlowId }: { taskFlowId: string }) {
             } h-full flex flex-col`}
           >
             <div className="flex-1">
-              <Flow onCreateTask={() => setIsCreateModalOpen(true)} />
+              <Flow
+                taskFlowId={taskFlowId}
+                onCreateTask={() => setIsCreateModalOpen(true)}
+              />
             </div>
           </div>
 

@@ -5,6 +5,9 @@ import ReactFlow, {
   NodeTypes,
   EdgeTypes,
   ReactFlowInstance,
+  Connection,
+  Edge,
+  NodeDragHandler,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { MiniMapWidget } from "@/components/flow/controls/MiniMapWidget";
@@ -18,7 +21,9 @@ import {
 } from "@/components/flow/constants";
 import { useFlowStore } from "@/components/flow/store/useFlowStore";
 import { Box } from "@mantine/core";
-
+import { createEdgeInBackground } from "./bi/edges";
+import { v4 as uuidv4 } from "uuid";
+import { updateNodeInBackground } from "./bi/tasks";
 const nodeTypes: NodeTypes = {
   [NODE_TYPES.CARD]: CardNode,
 };
@@ -28,10 +33,11 @@ const edgeTypes: EdgeTypes = {
 };
 
 interface FlowProps {
+  taskFlowId: string;
   onCreateTask: () => void;
 }
 
-export function Flow({ onCreateTask }: FlowProps) {
+export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
   const flowRef = useRef<ReactFlowInstance | null>(null);
   const {
     nodes,
@@ -43,6 +49,7 @@ export function Flow({ onCreateTask }: FlowProps) {
     onEdgesChange,
     toggleLayoutLock,
     toggleSnapToGrid,
+    onConnect,
     deleteEdges,
     recalculateNodePositions,
   } = useFlowStore();
@@ -79,6 +86,35 @@ export function Flow({ onCreateTask }: FlowProps) {
     }
   };
 
+  const handleOnConnect = (params: Edge | Connection) => {
+    if (!taskFlowId) {
+      throw new Error("Task flow ID is required");
+    }
+    if (!params.source || !params.target) {
+      throw new Error("Source and target are required");
+    }
+    const data = {
+      id: `edge-${uuidv4()}`,
+      taskFlowId: taskFlowId,
+      source: params.source,
+      target: params.target,
+      type: EDGE_TYPES.CUSTOM,
+    };
+    createEdgeInBackground(data);
+    onConnect(data);
+  };
+
+  const handleOnNodeDragStop: NodeDragHandler = (event, node) => {
+    updateNodeInBackground({
+      taskFlowId: taskFlowId,
+      nodeId: node.id,
+      updates: {
+        positionX: node.position.x,
+        positionY: node.position.y,
+      },
+    });
+  };
+
   return (
     <Box className="h-full relative">
       <ReactFlow
@@ -86,7 +122,9 @@ export function Flow({ onCreateTask }: FlowProps) {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onNodeDragStop={handleOnNodeDragStop}
         onEdgesChange={onEdgesChange}
+        onConnect={handleOnConnect}
         attributionPosition="top-left"
         onEdgesDelete={(edges) => deleteEdges(edges.map((e) => e.id))}
         nodeTypes={nodeTypes}
@@ -111,7 +149,6 @@ export function Flow({ onCreateTask }: FlowProps) {
           isLayoutLocked={isLayoutLocked}
           isSnapToGrid={isSnapToGrid}
           onRecalculatePositions={() => {
-            console.log("Recalculating node positions");
             recalculateNodePositions();
           }}
         />
@@ -119,6 +156,8 @@ export function Flow({ onCreateTask }: FlowProps) {
           gap={BACKGROUND.gap}
           size={BACKGROUND.size}
           variant={BackgroundVariant.Dots}
+          className="bg-muted/30"
+          color="gray"
         />
       </ReactFlow>
     </Box>
