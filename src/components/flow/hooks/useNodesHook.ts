@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFlowStore } from "../store/useFlowStore";
 import { NodeChange } from "reactflow";
-import { TaskType } from "../types/flow.types";
+import { TaskForNode } from "@/types";
 import { updateNodeInBackground } from "../bi/tasks";
-import { TaskNode, Task } from "@prisma/client";
+import { TaskNode } from "@prisma/client";
 
 interface NodeFromAPI extends TaskNode {
-  task: Task;
+  task: TaskForNode;
 }
 
 export function useNodesHook(taskFlowId: string) {
@@ -25,7 +25,7 @@ export function useNodesHook(taskFlowId: string) {
       // Ensure each node has position data
       const nodesWithPosition = data.map((node) => ({
         ...node,
-        data: node.task as TaskType,
+        data: node.task as TaskForNode,
         position: {
           x: node.positionX || 0,
           y: node.positionY || 0,
@@ -43,7 +43,7 @@ export function useNodesHook(taskFlowId: string) {
       type: string;
       positionX: number;
       positionY: number;
-      data: TaskType;
+      data: TaskForNode;
     }) => {
       const response = await fetch(`/api/taskflows/${taskFlowId}/nodes`, {
         method: "POST",
@@ -57,7 +57,7 @@ export function useNodesHook(taskFlowId: string) {
     },
     onSuccess: (newNode) => {
       queryClient.invalidateQueries({ queryKey: ["nodes", taskFlowId] });
-      addNode(newNode.data);
+      addNode(newNode.data, newNode.id);
     },
   });
 
@@ -68,7 +68,7 @@ export function useNodesHook(taskFlowId: string) {
       type: string;
       positionX: number;
       positionY: number;
-      data: TaskType;
+      data: TaskForNode;
     }) => {
       const response = await fetch(`/api/taskflows/${taskFlowId}/nodes`, {
         method: "PUT",

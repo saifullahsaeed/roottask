@@ -26,6 +26,7 @@ export async function GET(
       target: dep.targetId,
       type: dep.type,
       data: dep.data || {},
+      style: (dep.style as React.CSSProperties) || {},
     }));
 
     return NextResponse.json(edges);

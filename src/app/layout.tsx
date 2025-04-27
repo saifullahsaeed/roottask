@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Card Tree - Visual Organization Platform",
+  title: "RootTask - Task Management & Collaboration Platform",
   description:
-    "A modern card-based organization platform that helps you structure your thoughts and ideas.",
+    "A modern task management and collaboration platform with card-based organization, threaded discussions, and flow-based interface.",
 };
 
 const mantineTheme = createTheme({

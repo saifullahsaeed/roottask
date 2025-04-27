@@ -17,6 +17,7 @@ interface CreateBulkEdgesTaskData {
     type?: string;
     data?: Edge;
     id: string;
+    style?: React.CSSProperties;
   }[];
 }
 
@@ -82,6 +83,7 @@ export async function createBulkEdgesInBackground(
               target: edge.target,
               type: edge.type || "default",
               data: edge.data || {},
+              style: edge.style || {},
             })),
           }),
         }

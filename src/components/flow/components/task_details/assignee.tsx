@@ -9,17 +9,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip/tooltip";
+import { AssigneeWithUser } from "@/types";
 
 interface TaskAssigneeProps {
-  assignees: {
-    id: string;
-    user: {
-      id: string;
-      name: string;
-      image?: string | null;
-      email?: string | null;
-    } | null;
-  }[];
+  assignees: AssigneeWithUser[];
 }
 
 export default function TaskAssignee({ assignees }: TaskAssigneeProps) {

@@ -28,6 +28,7 @@ export async function POST(
             data: edge.data || {},
             flowId: taskFlowId,
             id: edge.id,
+            style: edge.style || {},
           },
         })
       )

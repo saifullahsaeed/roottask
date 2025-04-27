@@ -19,7 +19,15 @@ export async function GET(
       include: {
         sourceDependencies: true,
         targetDependencies: true,
-        task: true,
+        task: {
+          include: {
+            assignees: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
       },
     });
 

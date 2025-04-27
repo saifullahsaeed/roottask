@@ -46,6 +46,7 @@ export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
     selectedNode,
     isSnapToGrid,
     onNodesChange,
+    setSelectedNode,
     onEdgesChange,
     toggleLayoutLock,
     toggleSnapToGrid,
@@ -64,25 +65,52 @@ export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
 
   const handleFitView = () => {
     flowRef.current?.fitView({
-      padding: 0.5,
+      padding: 0.2,
       duration: 250,
     });
   };
 
   const handleReset = () => {
-    if (selectedNode) {
-    } else {
-      flowRef.current?.fitBounds(
-        {
-          x: 200,
-          y: 200,
-          width: 1600,
-          height: 600,
-        },
-        {
-          duration: 250,
-        }
-      );
+    try {
+      if (!flowRef.current) return;
+
+      if (selectedNode) {
+        // Center on selected node with appropriate zoom level
+        const nodeWidth = 300; // Approximate node width
+        const nodeHeight = 200; // Approximate node height
+        const padding = 100; // Padding around the node
+
+        flowRef.current.fitBounds(
+          {
+            x: selectedNode.position.x - padding,
+            y: selectedNode.position.y - padding,
+            width: nodeWidth + padding * 4,
+            height: nodeHeight + padding * 2,
+          },
+          {
+            duration: 250,
+            padding: 0.1,
+          }
+        );
+      } else {
+        // Show all nodes with appropriate zoom level
+        flowRef.current.fitBounds(
+          {
+            x: 200,
+            y: 200,
+            width: 1600,
+            height: 600,
+          },
+          {
+            duration: 250,
+            padding: 0.1,
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Error resetting view:", error);
+      // Fallback to default view
+      flowRef.current?.fitView({ duration: 250 });
     }
   };
 
@@ -125,6 +153,9 @@ export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
         onNodeDragStop={handleOnNodeDragStop}
         onEdgesChange={onEdgesChange}
         onConnect={handleOnConnect}
+        onNodeClick={(event, node) => {
+          setSelectedNode(node);
+        }}
         attributionPosition="top-left"
         onEdgesDelete={(edges) => deleteEdges(edges.map((e) => e.id))}
         nodeTypes={nodeTypes}

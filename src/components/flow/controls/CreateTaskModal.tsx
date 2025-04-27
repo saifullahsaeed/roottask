@@ -4,92 +4,209 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
   Button,
-  Input,
-  Calendar,
 } from "@/components/ui";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Calendar as CalendarIcon,
-  X,
-  User,
-  ArrowRight,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowRight, AlertCircle, ChevronDown } from "lucide-react";
 import { useFlowStore } from "../store/useFlowStore";
 import { TaskPriority, TaskStatus } from "@prisma/client";
-import { format as dateFnsFormat } from "date-fns";
-import { getPriorityIcon, getPriorityStyles } from "@/utils/priority";
-import { getStatusIcon, getStatusColor } from "@/utils/status";
 import { cn } from "@/lib/utils";
-import { TaskType } from "../types/flow.types";
 import { v4 as uuidv4 } from "uuid";
 import { EDGE_TYPES } from "../edges/EdgeTypes";
-import { Edge } from "reactflow";
 import {
   createNodeInBackground,
   createNodeWithEdgesInBackground,
 } from "../bi/tasks";
 import { getNextCardPosition } from "./nextCardposition";
+import { TaskForNode } from "@/types";
+import { Edge } from "reactflow";
+
+const priorityOptions: { value: TaskPriority; label: string }[] = [
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "CRITICAL", label: "Critical" },
+  { value: "BLOCKER", label: "Blocker" },
+];
+
+const priorityColors: Record<
+  TaskPriority,
+  {
+    bg: string;
+    text: string;
+    border: string;
+    hover: string;
+  }
+> = {
+  LOW: {
+    bg: "bg-gray-100/50 dark:bg-gray-800/50",
+    text: "text-gray-600 dark:text-gray-400",
+    border: "border-gray-200 dark:border-gray-700",
+    hover: "hover:bg-gray-100 dark:hover:bg-gray-800",
+  },
+  MEDIUM: {
+    bg: "bg-blue-100/50 dark:bg-blue-900/50",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+    hover: "hover:bg-blue-100 dark:hover:bg-blue-900",
+  },
+  HIGH: {
+    bg: "bg-orange-100/50 dark:bg-orange-900/50",
+    text: "text-orange-600 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800",
+    hover: "hover:bg-orange-100 dark:hover:bg-orange-900",
+  },
+  CRITICAL: {
+    bg: "bg-red-100/50 dark:bg-red-900/50",
+    text: "text-red-600 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800",
+    hover: "hover:bg-red-100 dark:hover:bg-red-900",
+  },
+  BLOCKER: {
+    bg: "bg-purple-100/50 dark:bg-purple-900/50",
+    text: "text-purple-600 dark:text-purple-400",
+    border: "border-purple-200 dark:border-purple-800",
+    hover: "hover:bg-purple-100 dark:hover:bg-purple-900",
+  },
+};
+
+const defaultPriorityStyle = {
+  bg: "bg-transparent",
+  text: "text-gray-500 dark:text-gray-400",
+  border: "border-gray-200 dark:border-gray-700",
+  hover: "hover:bg-gray-50 dark:hover:bg-gray-800/50",
+};
+
+const statusOptions: { value: TaskStatus; label: string }[] = [
+  { value: "TODO", label: "To Do" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "COMPLETED", label: "Completed" },
+];
+
+const statusColors = {
+  TODO: {
+    bg: "bg-gray-100/50 dark:bg-gray-800/50",
+    text: "text-gray-600 dark:text-gray-400",
+    border: "border-gray-200 dark:border-gray-700",
+    hover: "hover:bg-gray-100 dark:hover:bg-gray-800",
+  },
+  IN_PROGRESS: {
+    bg: "bg-blue-100/50 dark:bg-blue-900/50",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+    hover: "hover:bg-blue-100 dark:hover:bg-blue-900",
+  },
+  COMPLETED: {
+    bg: "bg-green-100/50 dark:bg-green-900/50",
+    text: "text-green-600 dark:text-green-400",
+    border: "border-green-200 dark:border-green-800",
+    hover: "hover:bg-green-100 dark:hover:bg-green-900",
+  },
+};
 
 interface PrioritySelectProps {
   value: TaskPriority | null;
-  onChange: (value: TaskPriority) => void;
+  onChange: (value: TaskPriority | null) => void;
 }
 
 function PrioritySelect({ value, onChange }: PrioritySelectProps) {
-  const PriorityIcon = value ? getPriorityIcon(value) : null;
+  const [isOpen, setIsOpen] = useState(false);
+
+  const currentStyle = value ? priorityColors[value] : defaultPriorityStyle;
 
   return (
-    <Select
-      value={value || ""}
-      onValueChange={(value) => onChange(value as TaskPriority)}
-    >
-      <SelectTrigger
+    <div className="relative w-full">
+      <button
         className={cn(
-          "h-9 px-2.5 flex-1 min-w-[160px] transition-colors",
-          value
-            ? getPriorityStyles(value)
-            : "bg-accent/20 text-muted-foreground hover:bg-accent/30"
+          "flex items-center justify-between w-full px-3 py-2 rounded-md",
+          "border transition-all duration-200",
+          "outline-none focus:ring-0",
+          currentStyle.bg,
+          currentStyle.text,
+          currentStyle.border,
+          currentStyle.hover,
+          "group"
         )}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-1.5">
-          {PriorityIcon && <PriorityIcon className="w-4 h-4" />}
-          <span className="text-sm font-medium">{value || "Priority"}</span>
-        </div>
-      </SelectTrigger>
-      <SelectContent align="start" className="p-1 flex">
-        {Object.values(TaskPriority).map((option) => {
-          const Icon = getPriorityIcon(option);
-          return (
-            <SelectItem
-              key={option}
-              value={option}
+        <span className="text-sm font-medium">
+          {value
+            ? priorityOptions.find((opt) => opt.value === value)?.label
+            : "Set Priority"}
+        </span>
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 transition-transform duration-200",
+            isOpen && "rotate-180",
+            "opacity-60 group-hover:opacity-100"
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute top-full left-0 right-0 mt-1",
+            "bg-white dark:bg-gray-800",
+            "rounded-md shadow-lg",
+            "border border-gray-200 dark:border-gray-700",
+            "z-10",
+            "animate-in fade-in zoom-in-95 duration-200"
+          )}
+        >
+          <button
+            className={cn(
+              "w-full px-3 py-2 text-left text-sm",
+              "transition-colors duration-200",
+              "first:rounded-t-md",
+              !value && "font-medium",
+              defaultPriorityStyle.text,
+              defaultPriorityStyle.hover,
+              "flex items-center gap-2"
+            )}
+            onClick={() => {
+              onChange(null);
+              setIsOpen(false);
+            }}
+          >
+            <div
               className={cn(
-                "flex items-center gap-1.5 py-1.5 pl-2 pr-2 cursor-pointer rounded-md transition-colors",
-                getPriorityStyles(option),
-                "hover:opacity-90",
-                "focus:ring-1 focus:ring-primary/30",
-                "data-[state=checked]:opacity-100"
+                "w-2 h-2 rounded-full",
+                defaultPriorityStyle.bg,
+                defaultPriorityStyle.border
               )}
+            />
+            No Priority
+          </button>
+          {priorityOptions.map((option) => (
+            <button
+              key={option.value}
+              className={cn(
+                "w-full px-3 py-2 text-left text-sm",
+                "transition-colors duration-200",
+                "last:rounded-b-md",
+                value === option.value && "font-medium",
+                priorityColors[option.value].text,
+                priorityColors[option.value].hover,
+                "flex items-center gap-2"
+              )}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
             >
-              <div className="flex items-center gap-1.5">
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{option}</span>
-              </div>
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  priorityColors[option.value].bg,
+                  priorityColors[option.value].border
+                )}
+              />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -99,196 +216,85 @@ interface StatusSelectProps {
 }
 
 function StatusSelect({ value, onChange }: StatusSelectProps) {
-  const StatusIcon = value ? getStatusIcon(value) : null;
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Select
-      value={value || ""}
-      onValueChange={(value) => onChange(value as TaskStatus)}
-    >
-      <SelectTrigger
+    <div className="relative w-full">
+      <button
         className={cn(
-          "h-9 px-2.5 flex-1 min-w-[160px] transition-colors",
+          "flex items-center justify-between w-full px-3 py-2 rounded-md",
+          "border transition-all duration-200",
+          "outline-none focus:ring-0",
           value && [
-            `bg-${getStatusColor(value)}/10`,
-            `text-${getStatusColor(value)}`,
-            "border-none",
-            "hover:opacity-90",
+            statusColors[value].bg,
+            statusColors[value].text,
+            statusColors[value].border,
+            statusColors[value].hover,
           ],
           !value && [
             "bg-accent/20",
             "text-muted-foreground",
             "hover:bg-accent/30",
-          ]
+          ],
+          "group"
         )}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-1.5">
-          {StatusIcon && <StatusIcon className="w-4 h-4" />}
-          <span className="text-sm font-medium">{value || "Status"}</span>
-        </div>
-      </SelectTrigger>
-      <SelectContent align="start" className="p-1 flex">
-        {Object.values(TaskStatus).map((option) => {
-          const Icon = getStatusIcon(option);
-          const statusColor = getStatusColor(option);
-          return (
-            <SelectItem
-              key={option}
-              value={option}
+        <span className="text-sm font-medium">
+          {value
+            ? statusOptions.find((opt) => opt.value === value)?.label
+            : "Set Status"}
+        </span>
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 transition-transform duration-200",
+            isOpen && "rotate-180",
+            "opacity-60 group-hover:opacity-100"
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute top-full left-0 right-0 mt-1",
+            "bg-white dark:bg-gray-800",
+            "rounded-md shadow-lg",
+            "border border-gray-200 dark:border-gray-700",
+            "z-10",
+            "animate-in fade-in zoom-in-95 duration-200"
+          )}
+        >
+          {statusOptions.map((option) => (
+            <button
+              key={option.value}
               className={cn(
-                "flex items-center gap-1.5 py-1.5 pl-2 pr-2 cursor-pointer rounded-md transition-colors",
-                `text-${statusColor}`,
-                `bg-${statusColor}/10`,
-                "hover:opacity-90",
-                "focus:ring-1 focus:ring-primary/30",
-                "data-[state=checked]:opacity-100"
+                "w-full px-3 py-2 text-left text-sm",
+                "transition-colors duration-200",
+                "first:rounded-t-md last:rounded-b-md",
+                value === option.value && "font-medium",
+                statusColors[option.value].text,
+                statusColors[option.value].hover,
+                "flex items-center gap-2"
               )}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
             >
-              <div className="flex items-center gap-1.5">
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{option}</span>
-              </div>
-            </SelectItem>
-          );
-        })}
-      </SelectContent>
-    </Select>
-  );
-}
-
-interface DatePickerProps {
-  startDate: Date | null;
-  endDate: Date | null;
-  onStartDateChange: (date: Date | null) => void;
-  onEndDateChange: (date: Date | null) => void;
-}
-
-function DatePicker({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange,
-}: DatePickerProps) {
-  return (
-    <div className="flex items-center gap-1.5 flex-1">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-9 px-2.5 rounded-md bg-accent/30 border-none text-sm font-medium flex items-center gap-1.5 flex-1"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            {startDate ? dateFnsFormat(startDate, "MMM d") : "Start date"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={startDate || undefined}
-            onSelect={(date) => onStartDateChange(date || null)}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-9 px-2.5 rounded-md bg-accent/30 border-none text-sm font-medium flex items-center gap-1.5 flex-1"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            {endDate ? dateFnsFormat(endDate, "MMM d") : "Due date"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={endDate || undefined}
-            onSelect={(date) => onEndDateChange(date || null)}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
-interface AssigneeInputProps {
-  assignees: string[];
-  onAssigneeAdd: (assignee: string) => void;
-  onAssigneeRemove: (assignee: string) => void;
-  isInputActive: boolean;
-  onInputActiveChange: (active: boolean) => void;
-}
-
-function AssigneeInput({
-  assignees,
-  onAssigneeAdd,
-  onAssigneeRemove,
-  isInputActive,
-  onInputActiveChange,
-}: AssigneeInputProps) {
-  const [newAssignee, setNewAssignee] = useState("");
-
-  const handleAddAssignee = () => {
-    if (newAssignee && !assignees.includes(newAssignee)) {
-      onAssigneeAdd(newAssignee);
-      setNewAssignee("");
-    }
-    onInputActiveChange(false);
-  };
-  return (
-    <>
-      <Button
-        variant="ghost"
-        onClick={() => onInputActiveChange(!isInputActive)}
-        className="h-9 px-2.5 rounded-md bg-accent/30 border-none text-sm font-medium flex items-center gap-1.5 min-w-[120px]"
-      >
-        <User className="w-4 h-4" />
-        {assignees.length > 0 ? `${assignees.length} assigned` : "Add assignee"}
-      </Button>
-
-      {isInputActive && (
-        <div className="relative">
-          <Input
-            type="text"
-            value={newAssignee}
-            onChange={(e) => setNewAssignee(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newAssignee) {
-                handleAddAssignee();
-              }
-            }}
-            placeholder="Enter name and press Enter"
-            className="h-9 px-2.5 text-sm"
-            autoFocus
-          />
-        </div>
-      )}
-
-      {assignees.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {assignees.map((assignee) => (
-            <span
-              key={assignee}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-accent/50 rounded-md text-sm"
-            >
-              <User className="w-3.5 h-3.5" />
-              {assignee}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onAssigneeRemove(assignee)}
-                className="hover:text-primary ml-0.5 h-4 w-4"
-              >
-                <X className="w-3.5 h-3.5" />
-              </Button>
-            </span>
+              <div
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  statusColors[option.value].bg,
+                  statusColors[option.value].border
+                )}
+              />
+              {option.label}
+            </button>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -298,56 +304,94 @@ interface ConnectionTypeSelectProps {
 }
 
 function ConnectionTypeSelect({ value, onChange }: ConnectionTypeSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const connectionTypes = [
+    {
+      value: EDGE_TYPES.NEXT_TASK,
+      label: "Next Task",
+      icon: ArrowRight,
+      className: "text-primary",
+    },
+    {
+      value: EDGE_TYPES.OPTIONAL_NEXT,
+      label: "Optional Next",
+      icon: ArrowRight,
+      className: "text-primary opacity-50",
+    },
+    {
+      value: EDGE_TYPES.BLOCKED,
+      label: "Blocked Task",
+      icon: AlertCircle,
+      className: "text-destructive",
+    },
+  ];
+
   return (
-    <Select value={value || ""} onValueChange={onChange}>
-      <SelectTrigger
+    <div className="relative w-full">
+      <button
         className={cn(
-          "h-9 px-2.5 flex-1 min-w-[160px] transition-colors",
+          "flex items-center justify-between w-full px-3 py-2 rounded-md",
+          "border transition-all duration-200",
+          "outline-none focus:ring-0",
           value
             ? "bg-primary/10 text-primary border-primary/20"
-            : "bg-accent/20 text-muted-foreground hover:bg-accent/30"
+            : "bg-accent/20 text-muted-foreground hover:bg-accent/30",
+          "group"
         )}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-1.5">
-          {value === EDGE_TYPES.NEXT_TASK && <ArrowRight className="w-4 h-4" />}
-          {value === EDGE_TYPES.OPTIONAL_NEXT && (
-            <ArrowRight className="w-4 h-4 opacity-50" />
+        <span className="text-sm font-medium">
+          {value
+            ? connectionTypes.find((type) => type.value === value)?.label
+            : "Connection Type"}
+        </span>
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 transition-transform duration-200",
+            isOpen && "rotate-180",
+            "opacity-60 group-hover:opacity-100"
           )}
-          {value === EDGE_TYPES.BLOCKED && (
-            <AlertCircle className="w-4 h-4 text-destructive" />
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute top-full left-0 right-0 mt-1",
+            "bg-white dark:bg-gray-800",
+            "rounded-md shadow-lg",
+            "border border-gray-200 dark:border-gray-700",
+            "z-10",
+            "animate-in fade-in zoom-in-95 duration-200"
           )}
-          <span className="text-sm font-medium">
-            {value === EDGE_TYPES.NEXT_TASK && "Next Task"}
-            {value === EDGE_TYPES.OPTIONAL_NEXT && "Optional Next"}
-            {value === EDGE_TYPES.BLOCKED && "Blocked Task"}
-            {!value && "Connection Type"}
-          </span>
+        >
+          {connectionTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.value}
+                className={cn(
+                  "w-full px-3 py-2 text-left text-sm",
+                  "transition-colors duration-200",
+                  "first:rounded-t-md last:rounded-b-md",
+                  value === type.value && "font-medium",
+                  "flex items-center gap-2",
+                  "hover:bg-primary/10"
+                )}
+                onClick={() => {
+                  onChange(type.value);
+                  setIsOpen(false);
+                }}
+              >
+                <Icon className={cn("w-4 h-4", type.className)} />
+                {type.label}
+              </button>
+            );
+          })}
         </div>
-      </SelectTrigger>
-      <SelectContent align="start" className="p-1 flex">
-        <SelectItem
-          value={EDGE_TYPES.NEXT_TASK}
-          className="flex items-center gap-1.5 py-1.5 pl-2 pr-2 cursor-pointer rounded-md transition-colors hover:bg-primary/10"
-        >
-          <ArrowRight className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium">Next Task</span>
-        </SelectItem>
-        <SelectItem
-          value={EDGE_TYPES.OPTIONAL_NEXT}
-          className="flex items-center gap-1.5 py-1.5 pl-2 pr-2 cursor-pointer rounded-md transition-colors hover:bg-primary/10"
-        >
-          <ArrowRight className="w-4 h-4 text-primary opacity-50" />
-          <span className="text-sm font-medium">Optional Next</span>
-        </SelectItem>
-        <SelectItem
-          value={EDGE_TYPES.BLOCKED}
-          className="flex items-center gap-1.5 py-1.5 pl-2 pr-2 cursor-pointer rounded-md transition-colors hover:bg-destructive/10"
-        >
-          <AlertCircle className="w-4 h-4 text-destructive" />
-          <span className="text-sm font-medium">Blocked Task</span>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+      )}
+    </div>
   );
 }
 
@@ -366,11 +410,7 @@ export function CreateTaskModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority | null>(null);
-  const [status, setStatus] = useState<TaskStatus | null>(null);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [assignees, setAssignees] = useState<string[]>([]);
-  const [isAssigneeInputActive, setIsAssigneeInputActive] = useState(false);
+  const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [connectionType, setConnectionType] = useState<string | null>(null);
 
   // Update connection type when initialConnectionType changes
@@ -383,15 +423,16 @@ export function CreateTaskModal({
   const handleCreateTask = () => {
     if (!title) return;
     const newNodeId = `node-${uuidv4()}`;
-    const newNode: TaskType = {
+    const newNode: TaskForNode = {
       id: `task-${uuidv4()}`,
       title,
       description,
       priority: priority || null,
       status: status || TaskStatus.TODO,
-      startDate: startDate || null,
-      dueDate: endDate || null,
-      assigneesIds: assignees.length > 0 ? assignees : [],
+      startDate: null,
+      dueDate: null,
+      assigneesIds: [],
+      coverId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -413,6 +454,43 @@ export function CreateTaskModal({
     // If there's a source node and connection type is selected, create the connection
     if (sourceNodeId && connectionType && newNode.id) {
       const nextCardPosition = getNextCardPosition(sourceNodeId);
+
+      // Define edge styles based on connection type
+      const getEdgeStyle = (type: string): React.CSSProperties => {
+        switch (type) {
+          case EDGE_TYPES.NEXT_TASK:
+            return {
+              stroke: "#2563eb", // Blue for next task
+              strokeWidth: 2,
+              strokeLinecap: "round" as const,
+              strokeLinejoin: "round" as const,
+            };
+          case EDGE_TYPES.OPTIONAL_NEXT:
+            return {
+              stroke: "#64748b", // Gray for optional
+              strokeWidth: 2,
+              strokeLinecap: "round" as const,
+              strokeLinejoin: "round" as const,
+              strokeDasharray: "5,5", // Dashed line for optional
+            };
+          case EDGE_TYPES.BLOCKED:
+            return {
+              stroke: "#dc2626", // Red for blocked
+              strokeWidth: 2,
+              strokeLinecap: "round" as const,
+              strokeLinejoin: "round" as const,
+              strokeDasharray: "3,3", // Different dash pattern for blocked
+            };
+          default:
+            return {
+              stroke: "#000",
+              strokeWidth: 2,
+              strokeLinecap: "round" as const,
+              strokeLinejoin: "round" as const,
+            };
+        }
+      };
+
       // Create a connection object that matches ReactFlow's Edge type
       const newEdge: Edge = {
         id: `edge-${uuidv4()}`,
@@ -421,12 +499,7 @@ export function CreateTaskModal({
         sourceHandle: null,
         targetHandle: null,
         type: connectionType,
-        style: {
-          stroke: "#000",
-          strokeWidth: 2,
-          strokeLinecap: "round",
-          strokeLinejoin: "round",
-        },
+        style: getEdgeStyle(connectionType),
       };
       // Add the edge to the store
       setEdges([...edges, newEdge]);
@@ -444,6 +517,7 @@ export function CreateTaskModal({
             target: newNodeId,
             type: connectionType,
             id: newEdge.id,
+            style: newEdge.style,
           },
         ],
       });
@@ -457,9 +531,6 @@ export function CreateTaskModal({
     setDescription("");
     setPriority(null);
     setStatus(TaskStatus.TODO);
-    setStartDate(null);
-    setEndDate(null);
-    setAssignees([]);
     setConnectionType(null);
   };
 
@@ -480,56 +551,80 @@ export function CreateTaskModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-4 py-3 space-y-3">
-          {/* Priority and Status Row */}
-          <div className="flex items-center gap-2">
-            <PrioritySelect value={priority} onChange={setPriority} />
-            <StatusSelect value={status} onChange={setStatus} />
+        <div className="px-6 py-4 space-y-5">
+          {/* Title Input */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <label className="text-sm font-medium text-muted-foreground">
+                Task Title
+              </label>
+              <span className="text-xs text-destructive">*</span>
+            </div>
+            <textarea
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What needs to be done?"
+              className={cn(
+                "w-full min-h-[60px] p-3 rounded-md border bg-background text-sm font-medium resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors",
+                !title && "border-destructive/50"
+              )}
+              rows={2}
+              autoFocus
+            />
+            {!title && (
+              <p className="text-xs text-destructive">Task title is required</p>
+            )}
           </div>
 
-          {/* Title Input */}
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Task title"
-            className="h-10 text-base font-medium"
-            autoFocus
-          />
+          {/* Priority and Status Row */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Priority
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  (optional)
+                </span>
+              </div>
+              <PrioritySelect value={priority} onChange={setPriority} />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Status
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  (optional)
+                </span>
+              </div>
+              <StatusSelect value={status} onChange={setStatus} />
+            </div>
+          </div>
 
           {/* Connection Type (only shown when creating from a source node) */}
           {sourceNodeId && (
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Connection Type
+                </label>
+                <span className="text-xs text-destructive">*</span>
+              </div>
               <ConnectionTypeSelect
                 value={connectionType}
                 onChange={setConnectionType}
               />
+              {!connectionType && (
+                <p className="text-xs text-destructive">
+                  Connection type is required
+                </p>
+              )}
             </div>
           )}
 
-          {/* Dates and Assignee Row */}
-          <div className="flex items-center gap-2">
-            <DatePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
-            <AssigneeInput
-              assignees={assignees}
-              onAssigneeAdd={(assignee) =>
-                setAssignees([...assignees, assignee])
-              }
-              onAssigneeRemove={(assignee) =>
-                setAssignees(assignees.filter((a) => a !== assignee))
-              }
-              isInputActive={isAssigneeInputActive}
-              onInputActiveChange={setIsAssigneeInputActive}
-            />
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-3 border-t border-border/50">
+          <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
             <Button
               variant="ghost"
               size="sm"
@@ -537,7 +632,7 @@ export function CreateTaskModal({
                 resetForm();
                 onClose();
               }}
-              className="px-3 text-sm font-medium"
+              className="px-4 text-sm font-medium hover:bg-muted/50"
             >
               Cancel
             </Button>
@@ -545,7 +640,7 @@ export function CreateTaskModal({
               onClick={handleCreateTask}
               disabled={Boolean(!title || (sourceNodeId && !connectionType))}
               size="sm"
-              className="px-3 py-1.5 text-sm font-medium"
+              className="px-4 text-sm font-medium"
             >
               {sourceNodeId ? "Create Connected Task" : "Create Task"}
             </Button>

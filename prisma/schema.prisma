@@ -57,6 +57,7 @@ model User {
   projects      Project[]
   assignedTasks TaskAssignee[]
   File          File[]
+  TaskComment   TaskComment[]
 }
 
 model VerificationToken {
@@ -154,27 +155,53 @@ model TaskComment {
   taskId    String
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // New fields for frontend features
+  parentId    String? // For replies, null if it's a top-level comment
+  parent      TaskComment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     TaskComment[]     @relation("CommentReplies")
+  isPinned    Boolean           @default(false)
+  likes       TaskCommentLike[] // Track individual likes
+  mentions    String[] // Array of user IDs mentioned in the comment
+  attachments TaskAttachment[] // Use TaskAttachment model instead of JSON
+
   @@index([taskId])
+  @@index([userId])
+  @@index([parentId]) // For efficient reply queries
+}
+
+model TaskCommentLike {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime    @default(now())
+
+  @@unique([commentId, userId]) // Ensure one like per user per comment
+  @@index([commentId])
   @@index([userId])
 }
 
 model TaskAttachment {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task      Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   userId    String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   fileId    String
-  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  Task      Task[]   @relation(name: "Cover")
+  file      File         @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  Task      Task[]       @relation(name: "Cover")
+  comment   TaskComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
 
   @@index([taskId])
   @@index([userId])
+  @@index([commentId])
 }
 
 model TaskChecklist {
@@ -253,6 +280,7 @@ model TaskDependency {
   flowId     String
   flow       TaskFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
   data       Json? // Store dependency-specific data
+  style      Json? // Store dependency-specific style 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

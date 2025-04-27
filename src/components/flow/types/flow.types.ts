@@ -1,3 +1,4 @@
+import { TaskForNode } from "@/types";
 import {
   Node,
   Edge,
@@ -6,17 +7,10 @@ import {
   NodeProps,
   Connection,
 } from "reactflow";
-import { Task, User } from "@prisma/client";
 
-// Node Data Types
-export interface TaskType extends Task {
-  assignees?: User[]; // Array of Assignees
-  assigneesIds?: string[]; // Array of Assignee IDs
-}
-
-export interface FlowNode extends Node<TaskType> {
+export interface FlowNode extends Node<TaskForNode> {
   id: string; // Frontend-generated node ID
-  data: TaskType;
+  data: TaskForNode;
 }
 
 // Store Types
@@ -44,8 +38,8 @@ export interface FlowActions {
 export interface NodeActions {
   setNodes: (nodes: FlowNode[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
-  updateNode: (id: string, data: TaskType) => void;
-  addNode: (id: string, data: TaskType) => void;
+  updateNode: (id: string, data: TaskForNode) => void;
+  addNode: (id: string, data: TaskForNode) => void;
   deleteNode: (id: string) => void;
 }
 
@@ -71,7 +65,7 @@ export interface TaskFlowProps {
 }
 
 export interface TaskDetailsProps {
-  node: Node<TaskType> | null;
+  node: Node<TaskForNode> | null;
 }
 
 // Constants Types
@@ -81,5 +75,5 @@ export interface BackgroundConfig {
 }
 
 export interface NodeTypes {
-  [key: string]: React.ComponentType<NodeProps<TaskType>>;
+  [key: string]: React.ComponentType<NodeProps<TaskForNode>>;
 }

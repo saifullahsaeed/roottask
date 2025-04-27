@@ -10,7 +10,7 @@ export function Navbar() {
       <div className="relative flex h-14 items-center px-4">
         {/* Left side - Logo */}
         <div className="absolute left-4 flex items-center">
-          <h1 className="text-xl font-bold text-primary">Card Tree</h1>
+          <h1 className="text-xl font-bold text-primary">RootTask</h1>
         </div>
 
         {/* Right side - Notifications and Profile */}

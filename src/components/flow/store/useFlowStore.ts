@@ -14,8 +14,8 @@ import {
   FlowControlActions,
   FlowActions,
   FlowNode,
-  TaskType,
 } from "@/components/flow/types/flow.types";
+import { TaskForNode } from "@/types";
 import { devtools } from "zustand/middleware";
 import { RecalculateNodePositions } from "../controls/PositionCalculator";
 
@@ -40,6 +40,7 @@ export const useFlowStore = create<Store>()(
     // Flow Actions
     setTaskFlowId: (taskFlowId: string) => set({ taskFlowId }),
     resetStore: () => set({ nodes: [], edges: [], selectedNodeId: null }),
+    setSelectedNode: (node: FlowNode | null) => set({ selectedNode: node }),
 
     // Node Actions
     setNodes: (nodes: FlowNode[]) => set({ nodes }),
@@ -48,7 +49,7 @@ export const useFlowStore = create<Store>()(
         nodes: applyNodeChanges(changes, get().nodes),
       });
     },
-    updateNode: (id: string, data: TaskType) => {
+    updateNode: (id: string, data: TaskForNode) => {
       set((state) => ({
         nodes: state.nodes.map((node) =>
           node.id === id ? { ...node, data: { ...node.data, ...data } } : node
@@ -57,7 +58,7 @@ export const useFlowStore = create<Store>()(
     },
     addNode: (
       id: string,
-      data: TaskType,
+      data: TaskForNode,
       type: string = "card",
       position: { x: number; y: number } = { x: 100, y: 100 }
     ) => {

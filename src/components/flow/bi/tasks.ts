@@ -1,22 +1,23 @@
-import { TaskType } from "../types/flow.types";
+import { TaskForNode } from "@/types";
 import { Node, Edge } from "reactflow";
 import { createBulkEdgesInBackground } from "./edges";
 
 interface CreateNodeTaskData {
   id: string;
   taskFlowId: string;
-  node: Node<TaskType>;
+  node: Node<TaskForNode>;
 }
 
 interface CreateNodeWithEdgesTaskData {
   taskFlowId: string;
-  node: Node<TaskType>;
+  node: Node<TaskForNode>;
   edges: {
     source: string;
     target: string;
     type?: string;
     data?: Edge;
     id: string;
+    style?: React.CSSProperties;
   }[];
 }
 
@@ -27,14 +28,14 @@ interface UpdateNodeTaskData {
     type?: string;
     positionX?: number;
     positionY?: number;
-    data?: Partial<TaskType>;
+    data?: Partial<TaskForNode>;
   };
 }
 
 interface UpdateTaskData {
   taskFlowId: string;
   taskId: string;
-  updates: Partial<TaskType>;
+  updates: Partial<TaskForNode>;
 }
 
 export async function createNodeInBackground(

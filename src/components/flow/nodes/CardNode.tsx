@@ -1,13 +1,14 @@
 import { Position, NodeProps, NodeToolbar } from "reactflow";
 import {
-  ChevronLeft,
+  MoreHorizontal,
   Trash2,
   Copy,
   Link,
   Pin,
   MoreVertical,
+  FileText as DescriptionIcon,
 } from "lucide-react";
-import { TaskType } from "../types/flow.types";
+import { TaskForNode } from "@/types";
 import { useFlowStore } from "../store/useFlowStore";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./card/StatusBadge";
@@ -30,8 +31,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { deleteNodeInBackground } from "../bi/tasks";
+import { Tooltip } from "@/components/ui/tooltip/tooltip";
 
-export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
+export function CardNode({ data, selected, id }: NodeProps<TaskForNode>) {
   const updateNode = useFlowStore((state) => state.updateNode);
   const { toggleTaskDetails, deleteNode, taskFlowId } = useFlowStore();
 
@@ -145,7 +147,7 @@ export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
         </Button>
       </NodeToolbar>
 
-      <div className="p-3 space-y-2">
+      <div className="p-4 space-y-3">
         {/* Status and Priority Row */}
         <div className="flex items-center justify-between gap-2">
           {data.status && (
@@ -157,29 +159,64 @@ export function CardNode({ data, selected, id }: NodeProps<TaskType>) {
           {data.priority && <PriorityBadge priority={data.priority} />}
         </div>
 
-        {/* Title */}
-        <div className="space-y-0.5">
-          <h3 className="font-medium text-foreground/90 line-clamp-2 text-sm leading-relaxed">
-            {data.title}
-          </h3>
+        {/* Title and Description */}
+        <div className="space-y-1">
+          <div className="flex items-start gap-2">
+            <h3 className="font-semibold text-foreground/90 line-clamp-2 text-base leading-relaxed">
+              {data.title}
+            </h3>
+            {data.description && (
+              <Tooltip
+                content={
+                  <div className="text-xs max-w-xs">
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
+                      <DescriptionIcon className="w-3.5 h-3.5 text-primary" />
+                      <div className="font-medium text-primary">
+                        Description
+                      </div>
+                    </div>
+                    <div className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {data.description}
+                    </div>
+                  </div>
+                }
+                variant="dark"
+                size="sm"
+              >
+                <div className="group relative w-5 h-5 mt-0.5">
+                  <div className="absolute inset-0 -m-1 rounded-md bg-primary/5 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                  <DescriptionIcon
+                    className={cn(
+                      "w-5 h-5 text-muted-foreground/80 flex-shrink-0 transition-all duration-200 relative z-10"
+                    )}
+                  />
+                </div>
+              </Tooltip>
+            )}
+          </div>
         </div>
 
         {/* Due Date, Assignees and Details Button */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/40">
-          <button
-            className="p-1 rounded-md hover:bg-muted/50 transition-colors"
-            onClick={handleShowDetails}
-          >
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
+        <div className="flex items-center justify-between pt-2 border-t border-border/40">
           <div className="flex items-center gap-2">
-            {data.dueDate && <DueDate dueDate={data.dueDate?.toString()} />}
-            {data.assignees && Array.isArray(data.assignees) ? (
+            {data.assignees && data.assignees.length > 0 && (
               <Assignees assignees={data.assignees} />
-            ) : (
-              data.assignees && <Assignees assignees={[data.assignees]} />
+            )}
+            {data.dueDate && data.startDate && (
+              <DueDate
+                status={data.status}
+                startDate={new Date(data.startDate).toISOString()}
+                dueDate={new Date(data.dueDate).toISOString()}
+              />
             )}
           </div>
+          <button
+            className="p-1.5 rounded-md hover:bg-muted/50 transition-colors"
+            onClick={handleShowDetails}
+            title="View details"
+          >
+            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
