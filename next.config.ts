@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
       {
         hostname: "plus.unsplash.com",
       },
+      {
+        hostname: "roottask.tor1.cdn.digitaloceanspaces.com",
+      },
     ],
   },
   allowedDevOrigins: [

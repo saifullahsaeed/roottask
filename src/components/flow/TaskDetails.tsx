@@ -20,11 +20,11 @@ import TaskStatusSelector from "@/components/flow/components/task_details/status
 import TaskPrioritySelector from "@/components/flow/components/task_details/priority";
 import TaskTimeline from "@/components/flow/components/task_details/timeline";
 import TaskAssignee from "@/components/flow/components/task_details/assignee";
-import TaskChecklistsSection from "@/components/flow/components/task_details/checklist";
-import TaskAttachmentsSection from "@/components/flow/components/task_details/attachments";
 import { TaskDiscussionsSection } from "@/components/flow/components/task_details/discussion";
 import { scrollToElement } from "@/utils/scroll";
 import { TaskWithRelations } from "@/types";
+import { TaskAttachmentsSection } from "@/components/flow/components/task_details/attachments/TaskAttachmentsSection";
+import { TaskChecklistsSection } from "@/components/flow/components/task_details/checklist/index";
 
 interface TaskDetailsProps {
   node: Node | null;
@@ -180,6 +180,7 @@ export function TaskDetails({ node, onClose, taskflowId }: TaskDetailsProps) {
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           )}
           title="Chat"
+          onClick={() => scrollToElement("discussions-section")}
         >
           <MessageCircle
             className={cn(
@@ -237,10 +238,10 @@ export function TaskDetails({ node, onClose, taskflowId }: TaskDetailsProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Cover Image */}
-          {taskData.cover && (
+          {taskData.cover && taskData.cover.file && (
             <div className="relative h-48 w-full overflow-hidden group">
               <Image
-                src={taskData.cover?.file.url || ""}
+                src={taskData.cover?.file?.url || ""}
                 alt="Task cover"
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -334,7 +335,7 @@ export function TaskDetails({ node, onClose, taskflowId }: TaskDetailsProps) {
             <TaskChecklistsSection taskId={taskData.id} />
 
             {/* Attachments */}
-            <TaskAttachmentsSection taskId={taskData.id} />
+            <TaskAttachmentsSection taskId={taskData.id} nodeId={node.id} />
             {/* Discussions */}
             <TaskDiscussionsSection taskId={taskData.id} />
           </div>

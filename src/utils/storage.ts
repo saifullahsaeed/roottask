@@ -33,6 +33,7 @@ export async function uploadFile(file: File, key: string) {
       Key: key,
       Body: buffer,
       ContentType: file.type,
+      ACL: "public-read",
     });
 
     await s3Client.send(command);

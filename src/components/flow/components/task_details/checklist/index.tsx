@@ -1,50 +1,19 @@
-"use client";
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  CheckCircle2,
-  Circle,
-  Plus,
-  Trash2,
-  Loader2,
-} from "lucide-react";
-import { Button, Input } from "@/components/ui";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/";
+import { Check, Plus, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TaskChecklistsSectionProps } from "./types";
+import { TaskChecklistWithItems } from "@/types";
+import { ChecklistItem } from "./ChecklistItem";
+import { ChecklistTitle } from "./ChecklistTitle";
 
-// Types
-interface TaskChecklistItem {
-  id: string;
-  content: string;
-  completed: boolean;
-}
-
-interface TaskChecklist {
-  id: string;
-  content: string;
-  items: TaskChecklistItem[];
-}
-
-interface TaskChecklistsSectionProps {
-  taskId: string;
-}
-
-export default function TaskChecklistsSection({
-  taskId,
-}: TaskChecklistsSectionProps) {
+export function TaskChecklistsSection({ taskId }: TaskChecklistsSectionProps) {
   const queryClient = useQueryClient();
 
   // Fetch checklists
-  const { data: checklists = [], isLoading: isFetching } = useQuery({
+  const { data: checklists = [], isLoading: isFetching } = useQuery<
+    TaskChecklistWithItems[]
+  >({
     queryKey: ["task", taskId, "checklists"],
     queryFn: async () => {
       const response = await fetch(`/api/task/${taskId}/checklist`);
@@ -79,7 +48,7 @@ export default function TaskChecklistsSection({
     onSuccess: (updatedChecklist, { checklistId }) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) =>
+        (old: TaskChecklistWithItems[] = []) =>
           old.map((checklist) =>
             checklist.id === checklistId ? updatedChecklist : checklist
           )
@@ -102,7 +71,7 @@ export default function TaskChecklistsSection({
     onSuccess: (_, { checklistId }) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) =>
+        (old: TaskChecklistWithItems[] = []) =>
           old.filter((checklist) => checklist.id !== checklistId)
       );
     },
@@ -122,7 +91,10 @@ export default function TaskChecklistsSection({
     onSuccess: (newChecklist) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) => [...old, { ...newChecklist, items: [] }]
+        (old: TaskChecklistWithItems[] = []) => [
+          ...old,
+          { ...newChecklist, items: [] },
+        ]
       );
     },
   });
@@ -144,7 +116,7 @@ export default function TaskChecklistsSection({
     onSuccess: (newItem, { checklistId }) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) =>
+        (old: TaskChecklistWithItems[] = []) =>
           old.map((checklist) =>
             checklist.id === checklistId
               ? { ...checklist, items: [...(checklist.items || []), newItem] }
@@ -179,7 +151,7 @@ export default function TaskChecklistsSection({
     onSuccess: (updatedItem, { checklistId, itemId }) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) =>
+        (old: TaskChecklistWithItems[] = []) =>
           old.map((checklist) =>
             checklist.id === checklistId
               ? {
@@ -217,13 +189,14 @@ export default function TaskChecklistsSection({
     onSuccess: (_, { checklistId, itemId }) => {
       queryClient.setQueryData(
         ["task", taskId, "checklists"],
-        (old: TaskChecklist[] = []) =>
+        (old: TaskChecklistWithItems[] = []) =>
           old.map((checklist) =>
             checklist.id === checklistId
               ? {
                   ...checklist,
                   items: (checklist.items || []).filter(
-                    (item) => item.id !== itemId
+                    (item: TaskChecklistWithItems["items"][0]) =>
+                      item.id !== itemId
                   ),
                 }
               : checklist
@@ -232,238 +205,37 @@ export default function TaskChecklistsSection({
     },
   });
 
-  // UI Components
-  const ChecklistItem = ({
-    item,
-    checklistId,
-  }: {
-    item: TaskChecklistItem;
-    checklistId: string;
-  }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [itemContent, setItemContent] = useState(item.content);
-    const [isHovered, setIsHovered] = useState(false);
-
-    const handleBlur = () => {
-      if (itemContent.trim() === "") return;
-      setIsEditing(false);
-      updateItemMutation.mutate({
-        checklistId,
-        itemId: item.id,
-        updates: { content: itemContent },
-      });
-    };
-
-    return (
-      <div
-        className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors group/item relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <button
-          aria-label={
-            item.completed ? "Mark item as incomplete" : "Mark item as complete"
-          }
-          className={cn(
-            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-            item.completed
-              ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-              : "border-muted-foreground/30 hover:border-primary hover:bg-muted/50"
-          )}
-          onClick={() =>
-            updateItemMutation.mutate({
-              checklistId,
-              itemId: item.id,
-              updates: { completed: !item.completed },
-            })
-          }
-          disabled={updateItemMutation.isPending}
-        >
-          {item.completed ? (
-            <CheckCircle2 className="w-4 h-4" />
-          ) : (
-            <Circle className="w-4 h-4" />
-          )}
-        </button>
-
-        {isEditing ? (
-          <Input
-            value={itemContent}
-            onChange={(e) => setItemContent(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleBlur();
-              } else if (e.key === "Escape") {
-                setIsEditing(false);
-                setItemContent(item.content);
-              }
-            }}
-            className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-            autoFocus
-          />
-        ) : (
-          <span
-            className={cn(
-              "text-sm flex-1 cursor-text transition-colors",
-              item.completed
-                ? "text-muted-foreground line-through"
-                : "text-foreground/90 hover:text-foreground"
-            )}
-            onClick={() => setIsEditing(true)}
-          >
-            {item.content}
-          </span>
-        )}
-
-        <div
-          className={cn(
-            "flex items-center gap-1 transition-opacity",
-            isHovered ? "opacity-100" : "opacity-0"
-          )}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-            onClick={() =>
-              deleteItemMutation.mutate({ checklistId, itemId: item.id })
-            }
-            disabled={deleteItemMutation.isPending}
-          >
-            {deleteItemMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const ChecklistTitle = ({
-    content,
-    checklistId,
-    taskId,
-  }: {
-    content: string;
-    checklistId: string;
-    taskId: string;
-  }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [title, setTitle] = useState(content);
-    const [isHovered, setIsHovered] = useState(false);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-    const handleBlur = () => {
-      if (title.trim() === "") return;
-      setIsEditing(false);
-      updateChecklistMutation.mutate({
-        taskId,
-        checklistId,
-        data: { name: title },
-      });
-    };
-
-    const handleDelete = () => {
-      deleteChecklistMutation.mutate({ checklistId });
-      setShowDeleteDialog(false);
-    };
-
-    return (
-      <>
-        <div
-          className="flex items-center gap-2 relative group"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {isEditing ? (
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleBlur();
-                } else if (e.key === "Escape") {
-                  setIsEditing(false);
-                  setTitle(content);
-                }
-              }}
-              className="flex-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-base font-medium min-w-[200px]"
-              autoFocus
-            />
-          ) : (
-            <h3
-              className="text-base font-medium cursor-text truncate max-w-[300px] group-hover:text-primary/80 transition-colors"
-              onClick={() => setIsEditing(true)}
-              title={title}
-            >
-              {title}
-            </h3>
-          )}
-
-          <div
-            className={cn(
-              "flex items-center gap-1 transition-opacity",
-              isHovered ? "opacity-100" : "opacity-0"
-            )}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={deleteChecklistMutation.isPending}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Checklist</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this checklist? This action
-                cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-                disabled={deleteChecklistMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleteChecklistMutation.isPending}
-              >
-                {deleteChecklistMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
-  };
-
   if (isFetching) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-4" id="checklists-section">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-xl border shadow-sm overflow-hidden"
+            >
+              <div className="px-5 py-3.5 bg-muted/30 border-b">
+                <div className="flex items-center justify-between mb-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <div className="p-3 space-y-2">
+                {[1, 2].map((j) => (
+                  <div key={j} className="flex items-center gap-3">
+                    <Skeleton className="w-5 h-5 rounded-full" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -481,12 +253,16 @@ export default function TaskChecklistsSection({
           onClick={() => createChecklistMutation.mutate()}
           disabled={createChecklistMutation.isPending}
         >
-          <Plus className="w-4 h-4" />
+          {createChecklistMutation.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Plus className="w-4 h-4" />
+          )}
           New Checklist
         </Button>
       </div>
 
-      {checklists?.map((checklist: TaskChecklist) => {
+      {checklists?.map((checklist: TaskChecklistWithItems) => {
         const completedItems = (checklist.items || []).filter(
           (item) => item.completed
         ).length;
@@ -503,6 +279,20 @@ export default function TaskChecklistsSection({
                   content={checklist.content}
                   checklistId={checklist.id}
                   taskId={taskId}
+                  onUpdate={(name) =>
+                    updateChecklistMutation.mutate({
+                      taskId,
+                      checklistId: checklist.id,
+                      data: { name },
+                    })
+                  }
+                  onDelete={() =>
+                    deleteChecklistMutation.mutate({
+                      checklistId: checklist.id,
+                    })
+                  }
+                  isUpdating={updateChecklistMutation.isPending}
+                  isDeleting={deleteChecklistMutation.isPending}
                 />
                 <Button
                   variant="ghost"
@@ -513,7 +303,11 @@ export default function TaskChecklistsSection({
                   }
                   disabled={createItemMutation.isPending}
                 >
-                  <Plus className="w-4 h-4" />
+                  {createItemMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
                   Add Item
                 </Button>
               </div>
@@ -529,13 +323,30 @@ export default function TaskChecklistsSection({
             <div className="p-3">
               {(checklist.items || []).length > 0 ? (
                 <div className="space-y-1">
-                  {(checklist.items || []).map((item: TaskChecklistItem) => (
-                    <ChecklistItem
-                      key={item.id}
-                      item={item}
-                      checklistId={checklist.id}
-                    />
-                  ))}
+                  {(checklist.items || []).map(
+                    (item: TaskChecklistWithItems["items"][0]) => (
+                      <ChecklistItem
+                        key={item.id}
+                        item={item}
+                        checklistId={checklist.id}
+                        onUpdate={(updates) =>
+                          updateItemMutation.mutate({
+                            checklistId: checklist.id,
+                            itemId: item.id,
+                            updates,
+                          })
+                        }
+                        onDelete={() =>
+                          deleteItemMutation.mutate({
+                            checklistId: checklist.id,
+                            itemId: item.id,
+                          })
+                        }
+                        isUpdating={updateItemMutation.isPending}
+                        isDeleting={deleteItemMutation.isPending}
+                      />
+                    )
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -571,7 +382,11 @@ export default function TaskChecklistsSection({
             onClick={() => createChecklistMutation.mutate()}
             disabled={createChecklistMutation.isPending}
           >
-            <Plus className="w-4 h-4" />
+            {createChecklistMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
             Create Checklist
           </Button>
         </div>
