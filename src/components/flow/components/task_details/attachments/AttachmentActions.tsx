@@ -1,9 +1,9 @@
 import { Trash2, Loader2, Download, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui";
-import { TaskAttachment } from "./types";
+import { TaskAttachmentWithFile } from "@/types";
 
 interface AttachmentActionsProps {
-  attachment: TaskAttachment;
+  attachment: TaskAttachmentWithFile;
   onDelete: () => void;
   onSetCover: () => void;
   isDeleting: boolean;
@@ -19,7 +19,7 @@ export function AttachmentActions({
 }: AttachmentActionsProps) {
   return (
     <div className="flex items-center gap-2">
-      {attachment.file.type.startsWith("image/") && (
+      {attachment.file.type?.startsWith("image/") && (
         <Button
           variant="ghost"
           size="icon"

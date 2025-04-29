@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
   Button,
   Card,
@@ -16,7 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 
-export default function SignupPage() {
+function SignupContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -232,5 +232,19 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      }
+    >
+      <SignupContent />
+    </Suspense>
   );
 }

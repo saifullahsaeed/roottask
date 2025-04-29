@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
   Button,
   Card,
@@ -16,7 +16,7 @@ import { Icons } from "@/components/icons";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -205,5 +205,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -14,10 +14,10 @@ import {
 import { useRouter } from "next/navigation";
 import { CreateTaskFlowDialog } from "@/components/dashboard/CreateTaskFlowDialog";
 import type { TaskFlow } from "@prisma/client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Skeleton } from "@/components/ui/";
 
-export default function TaskFlowsPage() {
+function TaskFlowsContent() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
   const router = useRouter();
@@ -175,5 +175,19 @@ export default function TaskFlowsPage() {
         projectId={projectId}
       />
     </div>
+  );
+}
+
+export default function TaskFlowsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      }
+    >
+      <TaskFlowsContent />
+    </Suspense>
   );
 }
