@@ -1,8 +1,7 @@
-import { Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { TaskAttachmentsProps } from "./types";
+import { Plus } from "lucide-react";
 
-interface AttachmentsHeaderProps extends TaskAttachmentsProps {
+interface AttachmentsHeaderProps {
   onUploadClick: () => void;
   isUploading: boolean;
 }
@@ -13,23 +12,16 @@ export function AttachmentsHeader({
 }: AttachmentsHeaderProps) {
   return (
     <div className="flex items-center justify-between">
-      <h3 className="text-base font-medium text-foreground">Attachments</h3>
-      <div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={onUploadClick}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Upload className="w-4 h-4" />
-          )}
-          Upload
-        </Button>
-      </div>
+      <h3 className="text-lg font-semibold">Attachments</h3>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onUploadClick}
+        disabled={isUploading}
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        {isUploading ? "Uploading..." : "Upload"}
+      </Button>
     </div>
   );
 }

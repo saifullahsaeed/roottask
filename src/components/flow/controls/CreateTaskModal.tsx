@@ -119,7 +119,8 @@ function PrioritySelect({ value, onChange }: PrioritySelectProps) {
         className={cn(
           "flex items-center justify-between w-full px-3 py-2 rounded-md",
           "border transition-all duration-200",
-          "outline-none focus:ring-0",
+          "outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "hover:scale-[1.02] active:scale-[0.98]",
           currentStyle.bg,
           currentStyle.text,
           currentStyle.border,
@@ -128,11 +129,24 @@ function PrioritySelect({ value, onChange }: PrioritySelectProps) {
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-sm font-medium">
-          {value
-            ? priorityOptions.find((opt) => opt.value === value)?.label
-            : "Set Priority"}
-        </span>
+        <div className="flex items-center gap-2">
+          {value && (
+            <div
+              className={cn(
+                "w-2 h-2 rounded-full",
+                value ? priorityColors[value].bg : defaultPriorityStyle.bg,
+                value
+                  ? priorityColors[value].border
+                  : defaultPriorityStyle.border
+              )}
+            />
+          )}
+          <span className="text-sm font-medium">
+            {value
+              ? priorityOptions.find((opt) => opt.value === value)?.label
+              : "Set Priority"}
+          </span>
+        </div>
         <ChevronDown
           className={cn(
             "w-4 h-4 transition-transform duration-200",
@@ -150,14 +164,15 @@ function PrioritySelect({ value, onChange }: PrioritySelectProps) {
             "rounded-md shadow-lg",
             "border border-gray-200 dark:border-gray-700",
             "z-10",
-            "animate-in fade-in zoom-in-95 duration-200"
+            "animate-in fade-in zoom-in-95 duration-200",
+            "overflow-hidden"
           )}
         >
           <button
             className={cn(
               "w-full px-3 py-2 text-left text-sm",
               "transition-colors duration-200",
-              "first:rounded-t-md",
+              "hover:bg-muted/50",
               !value && "font-medium",
               defaultPriorityStyle.text,
               defaultPriorityStyle.hover,
@@ -183,7 +198,7 @@ function PrioritySelect({ value, onChange }: PrioritySelectProps) {
               className={cn(
                 "w-full px-3 py-2 text-left text-sm",
                 "transition-colors duration-200",
-                "last:rounded-b-md",
+                "hover:bg-muted/50",
                 value === option.value && "font-medium",
                 priorityColors[option.value].text,
                 priorityColors[option.value].hover,
@@ -224,7 +239,8 @@ function StatusSelect({ value, onChange }: StatusSelectProps) {
         className={cn(
           "flex items-center justify-between w-full px-3 py-2 rounded-md",
           "border transition-all duration-200",
-          "outline-none focus:ring-0",
+          "outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "hover:scale-[1.02] active:scale-[0.98]",
           value && [
             statusColors[value].bg,
             statusColors[value].text,
@@ -240,11 +256,22 @@ function StatusSelect({ value, onChange }: StatusSelectProps) {
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-sm font-medium">
-          {value
-            ? statusOptions.find((opt) => opt.value === value)?.label
-            : "Set Status"}
-        </span>
+        <div className="flex items-center gap-2">
+          {value && (
+            <div
+              className={cn(
+                "w-2 h-2 rounded-full",
+                statusColors[value].bg,
+                statusColors[value].border
+              )}
+            />
+          )}
+          <span className="text-sm font-medium">
+            {value
+              ? statusOptions.find((opt) => opt.value === value)?.label
+              : "Set Status"}
+          </span>
+        </div>
         <ChevronDown
           className={cn(
             "w-4 h-4 transition-transform duration-200",
@@ -262,7 +289,8 @@ function StatusSelect({ value, onChange }: StatusSelectProps) {
             "rounded-md shadow-lg",
             "border border-gray-200 dark:border-gray-700",
             "z-10",
-            "animate-in fade-in zoom-in-95 duration-200"
+            "animate-in fade-in zoom-in-95 duration-200",
+            "overflow-hidden"
           )}
         >
           {statusOptions.map((option) => (
@@ -271,7 +299,7 @@ function StatusSelect({ value, onChange }: StatusSelectProps) {
               className={cn(
                 "w-full px-3 py-2 text-left text-sm",
                 "transition-colors duration-200",
-                "first:rounded-t-md last:rounded-b-md",
+                "hover:bg-muted/50",
                 value === option.value && "font-medium",
                 statusColors[option.value].text,
                 statusColors[option.value].hover,
@@ -438,7 +466,12 @@ export function CreateTaskModal({
     };
 
     // Add the node and get its ID
-    addNode(newNodeId, newNode);
+    if (!sourceNodeId) {
+      addNode(newNodeId, newNode, "card", { x: 100, y: 100 });
+    } else {
+      const nextCardPosition = getNextCardPosition(sourceNodeId);
+      addNode(newNodeId, newNode, "card", nextCardPosition);
+    }
     if (!sourceNodeId) {
       createNodeInBackground({
         id: newNodeId,
@@ -446,7 +479,7 @@ export function CreateTaskModal({
         node: {
           id: newNodeId,
           type: "card",
-          position: { x: 0, y: 0 },
+          position: { x: 100, y: 100 },
           data: newNode,
         },
       });
@@ -545,13 +578,13 @@ export function CreateTaskModal({
       }}
     >
       <DialogContent className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border p-0 gap-0 max-w-xl">
-        <DialogHeader className="px-4 pt-4 pb-2 border-b border-border/50">
+        <DialogHeader className="px-5 pt-4 pb-3 border-b border-border/50">
           <DialogTitle className="text-base font-semibold">
             {sourceNodeId ? "Create Connected Task" : "Create Task"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-4 space-y-5">
+        <div className="px-5 py-4 space-y-4">
           {/* Title Input */}
           <div className="space-y-2">
             <div className="flex items-center gap-1">
@@ -565,14 +598,19 @@ export function CreateTaskModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
               className={cn(
-                "w-full min-h-[60px] p-3 rounded-md border bg-background text-sm font-medium resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors",
+                "w-full min-h-[70px] p-3 rounded-md border bg-background text-sm font-medium resize-none",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "transition-all duration-200",
+                "placeholder:text-muted-foreground/60",
                 !title && "border-destructive/50"
               )}
               rows={2}
               autoFocus
             />
             {!title && (
-              <p className="text-xs text-destructive">Task title is required</p>
+              <p className="text-xs text-destructive mt-1">
+                Task title is required
+              </p>
             )}
           </div>
 
@@ -616,7 +654,7 @@ export function CreateTaskModal({
                 onChange={setConnectionType}
               />
               {!connectionType && (
-                <p className="text-xs text-destructive">
+                <p className="text-xs text-destructive mt-1">
                   Connection type is required
                 </p>
               )}
@@ -632,7 +670,7 @@ export function CreateTaskModal({
                 resetForm();
                 onClose();
               }}
-              className="px-4 text-sm font-medium hover:bg-muted/50"
+              className="px-4 text-sm font-medium hover:bg-muted/50 transition-colors"
             >
               Cancel
             </Button>
@@ -640,7 +678,7 @@ export function CreateTaskModal({
               onClick={handleCreateTask}
               disabled={Boolean(!title || (sourceNodeId && !connectionType))}
               size="sm"
-              className="px-4 text-sm font-medium"
+              className="px-4 text-sm font-medium transition-colors"
             >
               {sourceNodeId ? "Create Connected Task" : "Create Task"}
             </Button>

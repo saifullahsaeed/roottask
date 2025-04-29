@@ -77,7 +77,7 @@ export async function GET(
     const { task_id } = await params;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "5");
     const skip = (page - 1) * limit;
 
     const [attachments, total] = await Promise.all([

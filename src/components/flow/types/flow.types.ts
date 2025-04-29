@@ -39,7 +39,12 @@ export interface NodeActions {
   setNodes: (nodes: FlowNode[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   updateNode: (id: string, data: TaskForNode) => void;
-  addNode: (id: string, data: TaskForNode) => void;
+  addNode: (
+    id: string,
+    data: TaskForNode,
+    type?: string,
+    position?: { x: number; y: number }
+  ) => void;
   deleteNode: (id: string) => void;
 }
 

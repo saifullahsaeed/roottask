@@ -84,12 +84,12 @@ export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
           {
             x: selectedNode.position.x - padding,
             y: selectedNode.position.y - padding,
-            width: nodeWidth + padding * 4,
-            height: nodeHeight + padding * 2,
+            width: nodeWidth + padding * 6,
+            height: nodeHeight + padding * 4,
           },
           {
             duration: 250,
-            padding: 0.1,
+            padding: 0.5,
           }
         );
       } else {
