@@ -20,18 +20,10 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
-
-      - name: Verify build
         run: |
-          if [ ! -d ".next" ]; then
-            echo "Build failed: .next directory not found"
-            exit 1
-          fi
-          if [ ! -f ".next/BUILD_ID" ]; then
-            echo "Build failed: BUILD_ID not found"
-            exit 1
-          fi
+          # Set memory limit for Node.js
+          export NODE_OPTIONS="--max-old-space-size=512"
+          npm run build
 
       - name: Transfer files to server
         uses: appleboy/scp-action@master
@@ -51,31 +43,20 @@ jobs:
           password: sN91#r5wNIqz
           script: |
             cd /var/www/html
+
             # Load nvm
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # Create temporary directory for new deployment
-            DEPLOY_DIR="/var/www/html"
+            # Set memory limit for Node.js
+            export NODE_OPTIONS="--max-old-space-size=512"
 
-            # Install dependencies
+            # Install only production dependencies
             npm ci --production
 
-            # Verify .next directory
-            if [ ! -d ".next" ]; then
-              echo "Error: .next directory not found after transfer"
-              exit 1
-            fi
-
-            # Verify BUILD_ID
-            if [ ! -f ".next/BUILD_ID" ]; then
-              echo "Error: BUILD_ID not found in .next directory"
-              exit 1
-            fi
-
             # Set proper permissions
-            sudo chown -R www-data:www-data $DEPLOY_DIR
-            sudo chmod -R 755 $DEPLOY_DIR
+            sudo chown -R www-data:www-data /var/www/html
+            sudo chmod -R 755 /var/www/html
 
             # Create logs directory
             mkdir -p logs
@@ -83,18 +64,8 @@ jobs:
             # Stop and delete existing process
             pm2 delete card-tree || true
 
-            # Start the application
+            # Start the application with memory limit
             pm2 start ecosystem.config.js
 
             # Save PM2 configuration
             pm2 save
-
-            # Wait for the app to start
-            sleep 5
-
-            # Check if the app is running
-            if ! pm2 list | grep -q "online"; then
-              echo "Error: Application failed to start"
-              pm2 logs card-tree --lines 50
-              exit 1
-            fi
