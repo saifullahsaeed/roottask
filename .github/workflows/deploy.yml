@@ -1,10 +1,8 @@
 name: Deploy Next.js App to Digital Ocean Droplet
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -53,14 +51,12 @@ jobs:
           password: sN91#r5wNIqz
           script: |
             cd /var/www/html
-
             # Load nvm
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # Clean up
-            rm -rf node_modules
-            rm -rf .next
+            # Create temporary directory for new deployment
+            DEPLOY_DIR="/var/www/html"
 
             # Install dependencies
             npm ci --production
@@ -78,8 +74,8 @@ jobs:
             fi
 
             # Set proper permissions
-            chown -R root:root /var/www/html
-            chmod -R 755 /var/www/html
+            sudo chown -R www-data:www-data $DEPLOY_DIR
+            sudo chmod -R 755 $DEPLOY_DIR
 
             # Create logs directory
             mkdir -p logs
