@@ -24,7 +24,7 @@ jobs:
           host: roottask.com
           username: root
           password: sN91#r5wNIqz
-          source: ".next/,public/,package.json,package-lock.json,next.config.js"
+          source: ".next/,public/,package.json,package-lock.json,next.config.js,ecosystem.config.js"
           target: "/var/www/html/"
           strip_components: 0
 
@@ -46,5 +46,9 @@ jobs:
             # Ensure proper permissions
             chown -R root:root /var/www/html
             chmod -R 755 /var/www/html
-            # Restart the application
-            pm2 restart all || pm2 start npm --name "nextjs" -- start
+            # Create logs directory
+            mkdir -p logs
+            # Restart the application using PM2
+            pm2 delete card-tree || true
+            pm2 start ecosystem.config.js
+            pm2 save
