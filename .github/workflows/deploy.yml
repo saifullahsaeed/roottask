@@ -12,11 +12,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+          cache: "npm"
+
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
+
+      - name: Verify build
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "Build failed: .next directory not found"
+            exit 1
+          fi
+          if [ ! -f ".next/BUILD_ID" ]; then
+            echo "Build failed: BUILD_ID not found"
+            exit 1
+          fi
 
       - name: Transfer files to server
         uses: appleboy/scp-action@master
@@ -36,25 +53,52 @@ jobs:
           password: sN91#r5wNIqz
           script: |
             cd /var/www/html
+
             # Load nvm
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            # Remove old .next directory if it exists
+
+            # Clean up
+            rm -rf node_modules
             rm -rf .next
-            # Install all dependencies including devDependencies
-            npm install
-            # Build the application on the server
-            npm run build
-            # Ensure proper permissions
+
+            # Install dependencies
+            npm ci --production
+
+            # Verify .next directory
+            if [ ! -d ".next" ]; then
+              echo "Error: .next directory not found after transfer"
+              exit 1
+            fi
+
+            # Verify BUILD_ID
+            if [ ! -f ".next/BUILD_ID" ]; then
+              echo "Error: BUILD_ID not found in .next directory"
+              exit 1
+            fi
+
+            # Set proper permissions
             chown -R root:root /var/www/html
             chmod -R 755 /var/www/html
+
             # Create logs directory
             mkdir -p logs
+
             # Stop and delete existing process
             pm2 delete card-tree || true
-            # Start the application using PM2 with detailed logging
+
+            # Start the application
             pm2 start ecosystem.config.js
+
             # Save PM2 configuration
             pm2 save
-            # Show logs for debugging
-            pm2 logs card-tree --lines 20
+
+            # Wait for the app to start
+            sleep 5
+
+            # Check if the app is running
+            if ! pm2 list | grep -q "online"; then
+              echo "Error: Application failed to start"
+              pm2 logs card-tree --lines 50
+              exit 1
+            fi
