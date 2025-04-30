@@ -42,7 +42,7 @@ jobs:
           host: roottask.com
           username: root
           password: sN91#r5wNIqz
-          source: ".next/,public/,package.json,package-lock.json,next.config.ts,ecosystem.config.js,tsconfig.json"
+          source: ".next/,public/,package.json,package-lock.json,next.config.ts,ecosystem.config.js,tsconfig.json,node_modules/next,node_modules/react,node_modules/react-dom"
           target: "/var/www/html/"
           strip_components: 0
 
@@ -62,8 +62,14 @@ jobs:
             # Set memory limit for Node.js
             export NODE_OPTIONS="--max-old-space-size=512"
 
-            # Install only production dependencies
+            # Clean up and reinstall dependencies
+            rm -rf node_modules
             npm ci --production
+
+            # Ensure Next.js and React are properly linked
+            npm link next
+            npm link react
+            npm link react-dom
 
             # Set proper permissions
             sudo chown -R www-data:www-data /var/www/html
