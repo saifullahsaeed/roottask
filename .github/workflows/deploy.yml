@@ -39,9 +39,9 @@ jobs:
             # Remove old .next directory if it exists
             rm -rf .next
             # Install production dependencies
-            npm install --production
+            /usr/bin/npm install --production
             # Ensure proper permissions
             chown -R root:root /var/www/html
             chmod -R 755 /var/www/html
             # Restart the application
-            pm2 restart all || pm2 start npm --name "nextjs" -- start
+            /usr/local/bin/pm2 restart all || /usr/local/bin/pm2 start /usr/bin/npm --name "nextjs" -- start
