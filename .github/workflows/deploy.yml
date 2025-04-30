@@ -42,7 +42,7 @@ jobs:
           host: roottask.com
           username: root
           password: sN91#r5wNIqz
-          source: ".next/,public/,package.json,package-lock.json,next.config.js,ecosystem.config.js"
+          source: ".next/,public/,package.json,package-lock.json,next.config.ts,ecosystem.config.js,tsconfig.json"
           target: "/var/www/html/"
           strip_components: 0
 
@@ -80,3 +80,16 @@ jobs:
 
             # Save PM2 configuration
             pm2 save
+
+            # Wait for the app to start
+            sleep 5
+
+            # Check if the app is running and show logs
+            if pm2 list | grep -q "online"; then
+              echo "Application started successfully"
+              pm2 logs card-tree --lines 50
+            else
+              echo "Application failed to start"
+              pm2 logs card-tree --lines 100
+              exit 1
+            fi
