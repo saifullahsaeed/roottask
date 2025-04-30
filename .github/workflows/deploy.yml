@@ -43,8 +43,8 @@ jobs:
             rm -rf .next
             # Install all dependencies including devDependencies
             npm install
-            # Install Next.js globally
-            npm install -g next
+            # Build the application on the server
+            npm run build
             # Ensure proper permissions
             chown -R root:root /var/www/html
             chmod -R 755 /var/www/html
