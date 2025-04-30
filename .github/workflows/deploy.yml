@@ -41,14 +41,20 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             # Remove old .next directory if it exists
             rm -rf .next
-            # Install production dependencies
-            npm install --production
+            # Install all dependencies including devDependencies
+            npm install
+            # Install Next.js globally
+            npm install -g next
             # Ensure proper permissions
             chown -R root:root /var/www/html
             chmod -R 755 /var/www/html
             # Create logs directory
             mkdir -p logs
-            # Restart the application using PM2
+            # Stop and delete existing process
             pm2 delete card-tree || true
+            # Start the application using PM2 with detailed logging
             pm2 start ecosystem.config.js
+            # Save PM2 configuration
             pm2 save
+            # Show logs for debugging
+            pm2 logs card-tree --lines 20
