@@ -31,16 +31,72 @@ export async function GET(
       });
     }
 
+    // Use a transaction to fetch all taskflows and their related data efficiently
     const taskFlows = await prisma.taskFlow.findMany({
-      where: {
-        projectId,
-      },
-      orderBy: {
-        createdAt: "desc",
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        nodes: {
+          include: {
+            task: {
+              include: {
+                assignees: {
+                  include: { user: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json(taskFlows);
+    // Aggregate the required metadata for each taskflow in memory
+    const result = taskFlows.map((flow) => {
+      // Gather all tasks from nodes
+      const tasks = flow.nodes.map((node) => node.task).filter(Boolean);
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter(
+        (t) => t.status === "COMPLETED"
+      ).length;
+      const todoTasks = tasks.filter((t) => t.status === "TODO").length;
+      // Collect all unique assignee users
+      const assigneeMap = new Map();
+      for (const task of tasks) {
+        for (const assignee of task.assignees) {
+          if (assignee.user) {
+            assigneeMap.set(assignee.user.id, assignee.user);
+          }
+        }
+      }
+      const assignedTo = Array.from(assigneeMap.values());
+      // Calculate date range
+      const startDates = tasks.map((t) => t.startDate).filter((d) => !!d);
+      const dueDates = tasks.map((t) => t.dueDate).filter((d) => !!d);
+      const minStartDate =
+        startDates.length > 0
+          ? new Date(
+              Math.min(...startDates.map((d) => new Date(String(d)).getTime()))
+            ).toISOString()
+          : null;
+      const maxDueDate =
+        dueDates.length > 0
+          ? new Date(
+              Math.max(...dueDates.map((d) => new Date(String(d)).getTime()))
+            ).toISOString()
+          : null;
+      const dateRange = { startDate: minStartDate, endDate: maxDueDate };
+      // Return the taskflow with metadata
+      return {
+        ...flow,
+        totalTasks,
+        completedTasks,
+        todoTasks,
+        assignedTo,
+        dateRange,
+      };
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching taskflows:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

@@ -46,18 +46,20 @@ model Session {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String?
-  email         String?        @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[]
-  assignedTasks TaskAssignee[]
-  File          File[]
-  TaskComment   TaskComment[]
+  id               String            @id @default(cuid())
+  name             String?
+  email            String?           @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  accounts         Account[]
+  sessions         Session[]
+  projects         Project[]
+  assignedTasks    TaskAssignee[]
+  File             File[]
+  TaskComment      TaskComment[]
+  workspaces       Workspace[]
+  workspaceMembers WorkspaceMember[]
 }
 
 model VerificationToken {
@@ -66,6 +68,29 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Workspace {
+  id            String            @id @default(cuid())
+  name          String
+  createdBy     String
+  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  projects      Project[]
+  members       WorkspaceMember[]
+}
+
+enum WorkspaceRole {
+  ADMIN
+  MEMBER
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        WorkspaceRole @default(MEMBER)
 }
 
 enum ProjectStatus {
@@ -82,6 +107,8 @@ model Project {
   status        ProjectStatus
   createdBy     String
   createdByUser User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  workspaceId   String
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   taskFlows     TaskFlow[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

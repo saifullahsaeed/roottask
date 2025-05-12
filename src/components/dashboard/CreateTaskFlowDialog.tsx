@@ -17,12 +17,14 @@ interface CreateTaskFlowDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  onCreated?: (taskFlowId: string) => void;
 }
 
 export function CreateTaskFlowDialog({
   open,
   onOpenChange,
   projectId,
+  onCreated,
 }: CreateTaskFlowDialogProps) {
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +52,11 @@ export function CreateTaskFlowDialog({
       queryClient.invalidateQueries({ queryKey: ["taskflows", projectId] });
       onOpenChange(false);
       setName("");
-      router.push(`/dashboard/taskflows/${taskFlow.id}`);
+      if (typeof onCreated === "function") {
+        onCreated(taskFlow.id);
+      } else {
+        router.push(`/dashboard/taskflows/${taskFlow.id}`);
+      }
     } catch (error) {
       console.error("Error creating taskflow:", error);
     } finally {

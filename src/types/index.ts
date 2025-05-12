@@ -1,3 +1,6 @@
+// All shared types should be defined and imported from this file only.
+// Do not define types inline in components or pages; import from here.
+
 import type {
   Task,
   TaskAssignee,
@@ -5,6 +8,7 @@ import type {
   TaskChecklist,
   TaskChecklistItem,
   File,
+  TaskFlow,
   User,
   TaskComment,
   TaskCommentLike,
@@ -53,4 +57,26 @@ export type AssigneeWithUser = TaskAssignee & {
 export type TaskForNode = Task & {
   assignees?: AssigneeWithUser[];
   assigneesIds?: string[];
+};
+
+export type DashboardProject = {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  taskFlowCount: number;
+  taskCount: number;
+  lastActivity: string;
+  createdByUser?: { name?: string | null; email?: string | null };
+};
+
+export type TaskFlowWithMetaData = TaskFlow & {
+  totalTasks?: number | null;
+  completedTasks?: number | null;
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  assignedTo: User[] | [];
 };

@@ -1,0 +1,6 @@
+---
+description: If we creating or updating any type on frontewnd or any table inschema 
+globs: 
+alwaysApply: false
+---
+If we are creatiung or updating any type in the prohect use [index.ts](mdc:src/types/index.ts) for creating types types should be centerlized here 

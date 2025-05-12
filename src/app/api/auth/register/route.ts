@@ -44,6 +44,22 @@ export async function POST(req: Request) {
       },
     });
 
+    //create workspace
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: `${name}'s Workspace`,
+        createdBy: user.id,
+      },
+    });
+
+    //create workspace member
+    await prisma.workspaceMember.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: "ADMIN",
+      },
+    });
     return NextResponse.json(
       { message: "User created successfully", user },
       { status: 201 }

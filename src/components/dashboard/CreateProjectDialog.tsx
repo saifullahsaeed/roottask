@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/";
 import { Button } from "@/components/ui/";
 import { Label } from "@/components/ui/label";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -25,6 +25,11 @@ export function CreateProjectDialog({
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
 
+  const { data: workspaces } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: () => fetch("/api/workspace").then((res) => res.json()),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -35,7 +40,7 @@ export function CreateProjectDialog({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, workspaceId: workspaces[0].id }),
       });
 
       if (!response.ok) throw new Error("Failed to create project");

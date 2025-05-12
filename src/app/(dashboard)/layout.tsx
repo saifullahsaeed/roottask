@@ -11,7 +11,9 @@ export default function DashboardLayout({
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-hidden">{children}</main>
+        <main className="flex-1 overflow-auto bg-background pb-24">
+          {children}
+        </main>
       </div>
     </div>
   );
