@@ -8,6 +8,7 @@ import WorkflowTable from "./components/WorkflowTable";
 import WorkflowTimeline from "./components/WorkflowTimeline";
 import { CreateTaskFlowDialog } from "@/components/dashboard/CreateTaskFlowDialog";
 import { useRouter, useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProjectWorkflowsPage() {
   const [tab, setTab] = useState("list");
@@ -16,7 +17,21 @@ export default function ProjectWorkflowsPage() {
   const params = useParams();
   const projectId = params.projectId as string;
   // Dummy project info
-  const project = { name: "Sample Project", status: "ACTIVE" };
+  const {
+    data: project,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => getProject(projectId),
+  });
+
+  function getProject(projectId: string) {
+    return fetch(`/api/projects/${projectId}`).then((res) => res.json());
+  }
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="w-full">
