@@ -434,7 +434,7 @@ export function CreateTaskModal({
   sourceNodeId?: string;
   initialConnectionType?: string;
 }) {
-  const { addNode, taskFlowId, setEdges, edges } = useFlowStore();
+  const { addNode, taskFlowId, setEdges, edges, nodes } = useFlowStore();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority | null>(null);
@@ -465,13 +465,17 @@ export function CreateTaskModal({
       updatedAt: new Date(),
     };
 
-    // Add the node and get its ID
-    if (!sourceNodeId) {
-      addNode(newNodeId, newNode, "card", { x: 100, y: 100 });
-    } else {
+    if (sourceNodeId) {
+      const parentNode = nodes.find((node) => node.id === sourceNodeId);
+      if (!parentNode) {
+        return; // Do nothing if parent doesn't exist
+      }
       const nextCardPosition = getNextCardPosition(sourceNodeId);
       addNode(newNodeId, newNode, "card", nextCardPosition);
+    } else {
+      addNode(newNodeId, newNode, "card", { x: 100, y: 100 });
     }
+
     if (!sourceNodeId) {
       createNodeInBackground({
         id: newNodeId,
@@ -487,7 +491,6 @@ export function CreateTaskModal({
     // If there's a source node and connection type is selected, create the connection
     if (sourceNodeId && connectionType && newNode.id) {
       const nextCardPosition = getNextCardPosition(sourceNodeId);
-
       // Define edge styles based on connection type
       const getEdgeStyle = (type: string): React.CSSProperties => {
         switch (type) {

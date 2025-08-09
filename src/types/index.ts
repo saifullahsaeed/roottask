@@ -11,6 +11,8 @@ import type {
   TaskFlow,
   User,
   TaskComment,
+  Workspace,
+  WorkspaceMember,
   TaskCommentLike,
 } from "@prisma/client";
 
@@ -79,4 +81,12 @@ export type TaskFlowWithMetaData = TaskFlow & {
     endDate: string;
   };
   assignedTo: User[] | [];
+};
+
+export type WorkspaceMemberWithUser = WorkspaceMember & {
+  user: User;
+};
+
+export type WorkspaceWithMembers = Workspace & {
+  members: WorkspaceMemberWithUser[];
 };

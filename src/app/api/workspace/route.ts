@@ -10,19 +10,42 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
+    // Find all workspaces where the user is a member
     const workspaces = await prisma.workspace.findMany({
-      where: { members: { some: { userId: user.id } } },
+      where: {
+        members: {
+          some: {
+            user: { email: session.user.email },
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+          },
+          orderBy: {
+            role: "desc", // Sort members by role (ADMIN first)
+          },
+        },
+      },
     });
 
-    return NextResponse.json(workspaces);
+    // Sort workspaces to show ones where user is admin first
+    const sortedWorkspaces = workspaces.sort((a, b) => {
+      const aUserRole = a.members.find(
+        (m) => m.user.email === session.user.email
+      )?.role;
+      const bUserRole = b.members.find(
+        (m) => m.user.email === session.user.email
+      )?.role;
+
+      if (aUserRole === "ADMIN" && bUserRole !== "ADMIN") return -1;
+      if (aUserRole !== "ADMIN" && bUserRole === "ADMIN") return 1;
+      return 0;
+    });
+
+    return NextResponse.json(sortedWorkspaces);
   } catch (error) {
     console.error("Error fetching workspaces:", error);
     return NextResponse.json(

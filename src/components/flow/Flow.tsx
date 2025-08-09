@@ -127,6 +127,12 @@ export function Flow({ taskFlowId, onCreateTask }: FlowProps) {
       source: params.source,
       target: params.target,
       type: EDGE_TYPES.CUSTOM,
+      style: {
+        stroke: "#2563eb", // Blue for next task
+        strokeWidth: 2,
+        strokeLinecap: "round" as const,
+        strokeLinejoin: "round" as const,
+      },
     };
     createEdgeInBackground(data);
     onConnect(data);
